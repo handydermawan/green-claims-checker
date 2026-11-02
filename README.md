@@ -103,3 +103,4 @@ The PDFs are not included; download them from the links.
 
 ---
 
+<sub>Powered by Claude Opus 5.5</sub>

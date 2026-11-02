@@ -124,6 +124,7 @@ details.how summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--ac
 .rules th{font-size:12.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 .tablewrap{overflow-x:auto}
 footer{font-size:13px;color:var(--muted);max-width:100ch}
+.powered{font-size:12px;color:var(--muted);opacity:.75;text-align:center;letter-spacing:.03em;padding-top:8px;border-top:1px solid var(--line)}
 </style>
 
 <header class="appbar">
@@ -187,7 +188,7 @@ footer{font-size:13px;color:var(--muted);max-width:100ch}
       </div>
       <div class="actions">
         <div class="row">
-          <button class="btn" id="run">Run review with Claude</button>
+          <button class="btn" id="run">Run review</button>
           <button class="btn ghost" id="stop" hidden>Stop</button>
           <button class="btn ghost" id="saved">Show saved review</button>
         </div>
@@ -209,6 +210,7 @@ footer{font-size:13px;color:var(--muted);max-width:100ch}
   </div>
 
   <footer>Prototype for demonstration, not legal advice. Claude can miss or misread claims, so check every result against the source. The EU rules cited apply to consumer marketing (from 27 September 2026); for annual reports they are used as a benchmark. Report excerpts are taken from the public PDFs; check the wording against the original before quoting it.</footer>
+  <div class="powered">Powered by Claude Opus 5.5</div>
 </div>
 </div>
 
@@ -462,7 +464,7 @@ async function run(){
       const batch = batches[b];
       setStatus(`Claude is reading ${batches.length > 1 ? `batch ${b+1} of ${batches.length}` : "the text"}…`);
       const lines = batch.map((s,i) => `${i+1}. ${s.page ? "[p." + s.page + "] " : ""}${s.text}`).join("\n");
-      const arr = await sample.json(prompt(lines), { signal: ctl.signal });
+      const arr = await sample.json(prompt(lines), { signal: ctl.signal, model: "claude-opus-5-5", modelTier: "complex" });
       if (!Array.isArray(arr)) continue;
       for (const raw of arr){
         if (!raw || typeof raw !== "object" || !raw.quote) continue;

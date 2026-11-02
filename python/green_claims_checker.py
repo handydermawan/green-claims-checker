@@ -33,7 +33,7 @@ import sys
 from dataclasses import dataclass, field
 
 # ---------------------------------------------------------------- settings
-MODEL = "claude-sonnet-5-5"   # EDIT ME: any Claude model id your account can use
+MODEL = "claude-opus-5-5"     # EDIT ME: any Claude model id your account can use
 BATCH_SIZE = 40               # EDIT ME: sentences per Claude call
 MAX_SENTENCES = 400           # EDIT ME: safety cap per run (cost control)
 SHORT_TEXT_CHARS = 4000       # texts shorter than this are sent in full (no keyword filter)
