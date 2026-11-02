@@ -1,0 +1,541 @@
+<!doctype html><html lang="en"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>Green-Claims Checker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a two-pane workbench. Source text on the left, scored claims on the right; stacks on phones. */
+:root{
+  --bg:#F3F6F5; --panel:#FFFFFF; --ink:#13221E; --muted:#56655F; --line:#D5DEDA; --soft:#E8EEEB;
+  --accent:#0B5D6B; --accent-ink:#FFFFFF; --accent-soft:#DCEDEF;
+  --r0:#B42318; --r0-soft:#FDE8E6; --r1:#9A5B00; --r1-soft:#FDF0D8; --r2:#127A48; --r2-soft:#DDF3E6;
+  --display:"Schibsted Grotesk","Helvetica Neue",Arial,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1614; --panel:#16211E; --ink:#E4ECE9; --muted:#9DB0A9; --line:#2A3833; --soft:#1D2A26;
+  --accent:#5FC0CE; --accent-ink:#0B1B1E; --accent-soft:#16343A;
+  --r0:#FF8A7E; --r0-soft:#3A1A17; --r1:#F2B65A; --r1-soft:#33270F; --r2:#5FD394; --r2-soft:#123222; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1614; --panel:#16211E; --ink:#E4ECE9; --muted:#9DB0A9; --line:#2A3833; --soft:#1D2A26;
+  --accent:#5FC0CE; --accent-ink:#0B1B1E; --accent-soft:#16343A;
+  --r0:#FF8A7E; --r0-soft:#3A1A17; --r1:#F2B65A; --r1-soft:#33270F; --r2:#5FD394; --r2-soft:#123222; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.brand h1{font-family:var(--display);font-weight:800;font-size:clamp(24px,3.2vw,32px);letter-spacing:-.01em;margin:0;text-wrap:balance}
+.brand p{margin:2px 0 0;color:var(--muted);max-width:62ch}
+.tag{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:3px 10px;white-space:nowrap}
+.grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:18px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.step{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+h2{font-family:var(--display);font-weight:700;font-size:19px;margin:0}
+.samples{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.sample{all:unset;cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:9px 11px;display:flex;flex-direction:column;gap:2px;background:var(--panel)}
+.sample b{font-weight:600;font-size:14px}
+.sample span{font-size:12px;color:var(--muted)}
+.sample:hover{border-color:var(--accent)}
+.sample:focus-visible,button:focus-visible,textarea:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sample[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tab{all:unset;cursor:pointer;padding:8px 12px;font-weight:500;font-size:14px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+textarea{width:100%;min-height:260px;resize:vertical;font-family:var(--mono);font-size:12.5px;line-height:1.55;color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:10px}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.upload{display:flex;flex-direction:column;gap:10px}
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--muted);font-size:14px}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+label.small{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
+input[type=number]{width:80px;font:inherit;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
+.btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent);padding:9px 14px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.status{font-size:13px;color:var(--muted);min-height:1.5em;margin:0}
+.status.err{color:var(--r0)}
+.summary{display:flex;flex-direction:column;gap:10px}
+.runmeta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.pill{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--muted)}
+.pill.live{background:var(--accent-soft);color:var(--accent)}
+.counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:520px){.counts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.count{border-radius:8px;padding:10px 12px;background:var(--soft);display:flex;flex-direction:column}
+.count .n{font-family:var(--display);font-weight:800;font-size:26px;font-variant-numeric:tabular-nums;line-height:1.1}
+.count .l{font-size:12.5px;color:var(--muted)}
+.count.s0{background:var(--r0-soft)} .count.s0 .n{color:var(--r0)}
+.count.s1{background:var(--r1-soft)} .count.s1 .n{color:var(--r1)}
+.count.s2{background:var(--r2-soft)} .count.s2 .n{color:var(--r2)}
+.bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--soft)}
+.bar i{display:block;height:100%}
+.filters{display:flex;flex-wrap:wrap;gap:6px}
+.chip{all:unset;cursor:pointer;font-size:13px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.chip[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);font-weight:600}
+.claims{display:flex;flex-direction:column;gap:10px;min-width:0}
+.claim{border:1px solid var(--line);border-left-width:4px;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--panel);min-width:0}
+.claim.s0{border-left-color:var(--r0)} .claim.s1{border-left-color:var(--r1)} .claim.s2{border-left-color:var(--r2)}
+.chead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.score{font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;display:inline-flex;gap:6px;align-items:center}
+.score.s0{background:var(--r0-soft);color:var(--r0)} .score.s1{background:var(--r1-soft);color:var(--r1)} .score.s2{background:var(--r2-soft);color:var(--r2)}
+.where{font-family:var(--mono);font-size:12px;color:var(--muted)}
+blockquote{margin:0;font-size:15px;line-height:1.5;padding-left:12px;border-left:2px solid var(--line);overflow-wrap:anywhere}
+.checks{display:flex;flex-wrap:wrap;gap:6px}
+.ck{font-size:12px;padding:2px 8px;border-radius:6px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.ck.ok{color:var(--r2);border-color:color-mix(in srgb,var(--r2) 40%,transparent)}
+.ck.bad{color:var(--r0);border-color:color-mix(in srgb,var(--r0) 40%,transparent)}
+.why{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.why li small{display:block;color:var(--muted);font-size:12.5px}
+.found{font-size:13.5px;background:var(--soft);border-radius:8px;padding:8px 10px}
+.found b{font-weight:600}
+.rewrite{background:var(--accent-soft);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.rewrite .lbl{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.rewrite p{margin:0;overflow-wrap:anywhere}
+.copy{all:unset;cursor:pointer;font-size:12.5px;color:var(--accent);font-weight:600;align-self:flex-start}
+.empty{color:var(--muted);font-size:14px;padding:24px;text-align:center;border:1px dashed var(--line);border-radius:10px}
+details.how{border-top:1px solid var(--line);padding-top:12px}
+details.how summary{cursor:pointer;font-weight:600}
+.rules{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:10px}
+.rules td,.rules th{text-align:left;vertical-align:top;padding:7px 8px;border-bottom:1px solid var(--line)}
+.rules th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.tablewrap{overflow-x:auto}
+footer{font-size:12.5px;color:var(--muted);max-width:90ch}
+.spin{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Green-Claims Checker</h1>
+      <p>Paste marketing copy or upload a sustainability report. Claude finds each green claim; fixed rules score it 0, 1 or 2 and suggest compliant wording.</p>
+    </div>
+    <span class="tag">Prototype · Nov 2026</span>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="h-in">
+      <p class="step">Step 1</p>
+      <h2 id="h-in">Choose the text to check</h2>
+      <div class="samples" id="samples" role="group" aria-label="Examples"></div>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-paste" aria-selected="true" aria-controls="pane-paste">Paste text</button>
+        <button class="tab" role="tab" id="tab-pdf" aria-selected="false" aria-controls="pane-pdf">Upload PDF</button>
+      </div>
+      <div id="pane-paste" role="tabpanel" aria-labelledby="tab-paste" style="display:flex;flex-direction:column;gap:8px">
+        <textarea id="src" spellcheck="false" aria-label="Text to check"></textarea>
+        <p class="hint">Start a line with <code>[p.12]</code> to keep page numbers. Long texts are filtered to sentences about the environment before they are sent.</p>
+      </div>
+      <div id="pane-pdf" role="tabpanel" aria-labelledby="tab-pdf" class="upload" hidden>
+        <label class="drop" id="drop" for="pdf">
+          <strong>Drop a PDF here</strong> or click to choose one<br>
+          <span class="hint">For example the H&amp;M 2024, EQS 2023 or Shell 2025 report</span>
+        </label>
+        <input type="file" id="pdf" accept="application/pdf,.pdf" hidden>
+        <div class="row">
+          <label class="small" for="pfrom">Pages from <input type="number" id="pfrom" min="1" placeholder="1"></label>
+          <label class="small" for="pto">to <input type="number" id="pto" min="1" placeholder="end"></label>
+        </div>
+        <p class="hint">Large reports: choose the sustainability section only (for example Shell's sustainability statement). The PDF is read in your browser; only the sentences about the environment go to Claude.</p>
+        <p class="status" id="pdfstatus" aria-live="polite"></p>
+      </div>
+      <div class="row">
+        <button class="btn" id="run">Check claims with Claude</button>
+        <button class="btn ghost" id="stop" hidden>Stop</button>
+        <button class="btn ghost" id="saved">Show saved result</button>
+      </div>
+      <p class="status" id="status" aria-live="polite"></p>
+      <details class="how">
+        <summary>How scores are decided</summary>
+        <p class="hint" style="margin-top:8px">Claude answers yes/no questions about each claim. The score comes from fixed rules in this page, so the same answers always give the same score.</p>
+        <div class="tablewrap"><table class="rules">
+          <tr><th>Score</th><th>Rule</th></tr>
+          <tr><td><span class="score s0">0 · High risk</span></td><td>Relies on carbon offsets, <em>or</em> uses a broad or absolute term (“sustainable”, “recyclable”, “net zero”) with no evidence named, <em>or</em> is a future target with no plan or evidence.</td></tr>
+          <tr><td><span class="score s2">2 · Supported</span></td><td>No high-risk flag, and it gives a number, says what it covers, names evidence, states a baseline for any comparison and a plan for any target.</td></tr>
+          <tr><td><span class="score s1">1 · Needs work</span></td><td>Everything else: not misleading on its face, but missing a number, scope, baseline or evidence.</td></tr>
+        </table></div>
+      </details>
+    </section>
+
+    <section class="panel" aria-labelledby="h-out">
+      <p class="step">Step 2</p>
+      <h2 id="h-out">Claims found</h2>
+      <div class="summary" id="summary"></div>
+      <div class="filters" id="filters" role="group" aria-label="Filter by score"></div>
+      <div class="claims" id="claims"></div>
+      <div class="row">
+        <button class="btn ghost" id="csv" hidden>Download results (CSV)</button>
+      </div>
+    </section>
+  </div>
+
+  <footer>Prototype for demonstration, not legal advice. Claude can miss or misread claims, so check every result against the source. The EU rules cited apply to consumer marketing (from 27 September 2026); for annual reports they are used as a benchmark. Report excerpts are taken from the public PDFs; check the wording against the original before quoting it.</footer>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+
+/* ---------- Rules: fixed scoring from Claude's yes/no answers ---------- */
+const RULE = {
+  offset:  "EU Directive 2024/825, Annex I point 4c: claims of neutral, reduced or positive impact based on offsetting are banned for products.",
+  generic: "EU Directive 2024/825, Annex I point 4a: generic claims (“eco-friendly”, “sustainable”) are banned without recognised excellent performance. UK CMA Green Claims Code: claims must be clear and unambiguous.",
+  absolute:"UK CMA Green Claims Code: claims must not omit or hide important information, such as limits or conditions. EU Unfair Commercial Practices Directive: misleading actions.",
+  future:  "EU Directive 2024/825, Article 6(2)(d): claims about future performance need a detailed, realistic implementation plan, checked by an independent expert.",
+  evidence:"UK CMA Green Claims Code: claims must be substantiated with up-to-date evidence.",
+  baseline:"UK CMA Green Claims Code: comparisons must be fair and meaningful, so the baseline must be clear.",
+  scope:   "UK CMA Green Claims Code: say what the claim covers, considering the full life cycle.",
+  number:  "UK CMA Green Claims Code: claims must be clear; give the figure behind the claim."
+};
+function assess(c){
+  const red = [], amber = [];
+  if (c.offset_based) red.push(["Relies on carbon offsets or compensation", RULE.offset]);
+  if (c.generic_term && !c.evidence_cited) red.push(["Broad term with no evidence named", RULE.generic]);
+  if (c.absolute_claim && !c.evidence_cited) red.push(["Absolute claim with no limits or evidence", RULE.absolute]);
+  if (c.future_target && !c.plan_stated && !c.evidence_cited) red.push(["Future target with no plan or evidence", RULE.future]);
+  if (!c.quantified) amber.push(["No number given", RULE.number]);
+  if (!c.scope_stated) amber.push(["Doesn't say what it covers", RULE.scope]);
+  if (c.comparative && !c.baseline_stated) amber.push(["Comparison with no baseline", RULE.baseline]);
+  if (!c.evidence_cited && !red.length) amber.push(["No evidence or verification named", RULE.evidence]);
+  if (c.future_target && !c.plan_stated && c.evidence_cited) amber.push(["Target with no plan or milestones", RULE.future]);
+  let score = 1;
+  if (red.length) score = 0;
+  else if (c.quantified && c.scope_stated && c.evidence_cited && (!c.comparative || c.baseline_stated) && (!c.future_target || c.plan_stated)) score = 2;
+  return { score, reasons: red.concat(amber) };
+}
+const LABEL = ["High risk", "Needs work", "Supported"];
+const CHECKS = [["quantified","Number"],["scope_stated","Scope"],["evidence_cited","Evidence"],["baseline_stated","Baseline","comparative"],["plan_stated","Plan","future_target"]];
+
+/* ---------- Examples with saved results ---------- */
+const F = (o) => Object.assign({generic_term:false,absolute_claim:false,quantified:false,comparative:false,baseline_stated:false,scope_stated:false,evidence_cited:false,offset_based:false,future_target:false,plan_stated:false}, o);
+const SAMPLES = [
+ { id:"hm", name:"H&M Group", sub:"2024 report · excerpts", source:"H&M Group Annual and Sustainability Report 2024",
+   text:"[p.4] Currently 89 percent of the materials we use are recycled or sustainably sourced, with a goal of 100 percent by 2030.\n[p.8] H&M Group is co-funding a decarbonisation initiative in Bangladesh.\n[p.8] The initiative aims to speed up progress towards a net zero future for the fashion industry.\n[p.12] In 2024, our scope 3 greenhouse gas emissions decreased by 24 percent compared to our 2019 baseline.\n[p.16] We target a 56 percent reduction in greenhouse gas (GHG) emissions no later than 2030, with 2019 as a baseline.",
+   saved:[
+    F({page:4,quote:"Currently 89 percent of the materials we use are recycled or sustainably sourced, with a goal of 100 percent by 2030.",topic:"materials",generic_term:true,quantified:true,future_target:true,rewrite:"In 2024, 89% of our materials by weight were recycled ([x]%) or certified to [named schemes] ([y]%). Our goal is 100% by 2030, with [interim milestones]."}),
+    F({page:8,quote:"H&M Group is co-funding a decarbonisation initiative in Bangladesh.",topic:"emissions",rewrite:"We are co-funding [amount] for [project name] in Bangladesh, which aims to cut [x] tCO2e a year at [number] supplier factories by [year]."}),
+    F({page:8,quote:"The initiative aims to speed up progress towards a net zero future for the fashion industry.",topic:"target",generic_term:true,future_target:true,rewrite:"The project targets [x]% lower emissions at participating factories by [year], compared with [baseline year]."}),
+    F({page:12,quote:"In 2024, our scope 3 greenhouse gas emissions decreased by 24 percent compared to our 2019 baseline.",topic:"emissions",quantified:true,comparative:true,baseline_stated:true,scope_stated:true,rewrite:"In 2024, our scope 3 greenhouse gas emissions were 24% lower than in 2019 (verified by [assurance provider], [limited/reasonable] assurance)."}),
+    F({page:16,quote:"We target a 56 percent reduction in greenhouse gas (GHG) emissions no later than 2030, with 2019 as a baseline.",topic:"target",quantified:true,comparative:true,baseline_stated:true,future_target:true,rewrite:"We aim to cut [scope 1, 2 and 3] emissions 56% by 2030 against 2019, validated by [SBTi], through [main actions], with an interim target of [x]% by [year]."})
+   ]},
+ { id:"eqs", name:"EQS Group", sub:"2023 report · excerpts", source:"EQS Group Sustainability Report 2023",
+   text:"[p.34] We are working towards climate neutral operations by 2025.\n[p.34] There are no company cars at EQS, we avoid domestic flights within Europe and offset international flights.\n[p.34] Wherever possible, we have already switched to renewable energy sources in Germany where we procure our own electricity.\n[p.36] Climate-neutral business travel by 2023 through reduction, digital solutions or compensation.\n[p.36] Use of 50 percent renewable electricity at EQS sites.",
+   saved:[
+    F({page:34,quote:"We are working towards climate neutral operations by 2025.",topic:"target",generic_term:true,future_target:true,rewrite:"We aim to cut emissions from our offices and travel by [x]% by 2025 compared with [year], and will report any emissions we offset separately."}),
+    F({page:34,quote:"There are no company cars at EQS, we avoid domestic flights within Europe and offset international flights.",topic:"emissions",scope_stated:true,rewrite:"EQS has no company cars and avoids domestic flights within Europe. Emissions from international flights ([x] tCO2e in 2023) are offset through [project and standard]."}),
+    F({page:34,quote:"Wherever possible, we have already switched to renewable energy sources in Germany where we procure our own electricity.",topic:"energy",scope_stated:true,rewrite:"In 2023, [x]% of the electricity we buy directly in Germany came from renewable sources, backed by [guarantees of origin or supplier contract]."}),
+    F({page:36,quote:"Climate-neutral business travel by 2023 through reduction, digital solutions or compensation.",topic:"offsets",generic_term:true,offset_based:true,future_target:true,rewrite:"Business travel emissions were [x] tCO2e in 2023, down [y]% from [year]. We offset [z] tCO2e through [standard] and report this separately from reductions."}),
+    F({page:36,quote:"Use of 50 percent renewable electricity at EQS sites.",topic:"target",quantified:true,scope_stated:true,future_target:true,rewrite:"Target: 50% renewable electricity across all EQS sites by [year] (2023: [x]%), through [green tariffs at named sites]."})
+   ]},
+ { id:"shell", name:"Shell plc", sub:"2025 report · excerpts", source:"Shell plc Annual Report and Accounts 2025",
+   text:"[p.2] We see LNG as a flexible and reliable lower-carbon alternative to coal in power generation and industry.\n[p.3] In August 2025, we marked the first injection of CO2 at the Northern Lights project in Norway.\n[p.5] We reduced the net carbon intensity of the energy products we sell by 9%, compared with 2016.\n[p.5] Today we have around $20 billion of our capital employed across lower-carbon platforms.\n[p.10] We have a target to become a net-zero emissions energy business by 2050.\n[p.15] We have reduced our combined Scope 1 and 2 emissions by 36% since 2016.",
+   saved:[
+    F({page:2,quote:"We see LNG as a flexible and reliable lower-carbon alternative to coal in power generation and industry.",topic:"product",comparative:true,baseline_stated:true,rewrite:"When it replaces coal in power generation, LNG emits around [x]% less CO2e per unit of electricity on a life-cycle basis ([source]), including methane leakage of [y]%."}),
+    F({page:3,quote:"In August 2025, we marked the first injection of CO2 at the Northern Lights project in Norway.",topic:"emissions",scope_stated:true,rewrite:"In August 2025, the Northern Lights project in Norway (Shell share: [x]%) began injecting CO2, with capacity of [y] million tonnes a year in phase one."}),
+    F({page:5,quote:"We reduced the net carbon intensity of the energy products we sell by 9%, compared with 2016.",topic:"emissions",quantified:true,comparative:true,baseline_stated:true,scope_stated:true,rewrite:"The net carbon intensity of the energy products we sold in 2025 was 9% lower than in 2016, covering [which emissions], with [assurance provider and level]."}),
+    F({page:5,quote:"Today we have around $20 billion of our capital employed across lower-carbon platforms.",topic:"product",generic_term:true,quantified:true,rewrite:"About $20 billion of capital employed is in [biofuels, EV charging, CCS, …] as defined on page [x], equal to [y]% of total capital employed."}),
+    F({page:10,quote:"We have a target to become a net-zero emissions energy business by 2050.",topic:"target",generic_term:true,future_target:true,rewrite:"We target net-zero emissions across scope 1, 2 and 3 by 2050, with interim targets of [x]% by 2030 and the spending plan set out on page [y]."}),
+    F({page:15,quote:"We have reduced our combined Scope 1 and 2 emissions by 36% since 2016.",topic:"emissions",quantified:true,comparative:true,baseline_stated:true,scope_stated:true,rewrite:"Our combined Scope 1 and 2 emissions in 2025 were 36% lower than in 2016 (operational control basis, [assurance provider and level])."})
+   ]},
+ { id:"cases", name:"Regulator cases", sub:"4 fined claims + 1 good one", source:"Wording summarised from regulator findings, not the original ads",
+   text:"Glad 50% Ocean Plastic bags are made with 50% ocean plastic.\nK-Cup pods can be effectively recycled.\nClean Diesel: cleaner, low-emission diesel cars that meet the strictest standards.\nESG is integrated into everything we do, and we are a leader in ESG.\nThis jacket's outer shell is 100% recycled polyester by weight, certified to the Global Recycled Standard (licence no. [x]).",
+   saved:[
+    F({who:"Glad (Clorox), Australia",quote:"Glad 50% Ocean Plastic bags are made with 50% ocean plastic.",topic:"product",generic_term:true,quantified:true,scope_stated:true,found:"Australia's Federal Court found the plastic was collected from communities up to 50 km inland in Indonesia, not from the ocean. Penalty: A$8.25 million.",rewrite:"Made with 50% recycled plastic collected from [where], certified by [scheme]."}),
+    F({who:"Keurig, United States",quote:"K-Cup pods can be effectively recycled.",topic:"product",absolute_claim:true,scope_stated:true,found:"The US SEC (2024) found Keurig's annual reports said this without disclosing that two large recycling companies would not accept the pods. Penalty: US$1.5 million.",rewrite:"Our pods are made of #5 plastic. Check locally: only some recycling facilities accept them, and the lid and filter must be removed first."}),
+    F({who:"Volkswagen, United States",quote:"Clean Diesel: cleaner, low-emission diesel cars that meet the strictest standards.",topic:"product",generic_term:true,absolute_claim:true,comparative:true,found:"The US EPA (2015) found software that cut emissions only during tests; on the road, NOx emissions were up to 40 times the limit. Costs to VW: over €25 billion.",rewrite:"[Model] emits [x] mg/km NOx in [named real-driving test], independently tested by [lab]."}),
+    F({who:"DWS, Germany and United States",quote:"ESG is integrated into everything we do, and we are a leader in ESG.",topic:"other",generic_term:true,absolute_claim:true,found:"The US SEC (2023) fined DWS US$19 million for overstating how it used ESG in investing; German prosecutors fined it €25 million in 2025.",rewrite:"[x]% of our assets under management (€[y] billion) are in funds that apply [named ESG criteria], checked by [independent reviewer]."}),
+    F({who:"Illustrative example",quote:"This jacket's outer shell is 100% recycled polyester by weight, certified to the Global Recycled Standard (licence no. [x]).",topic:"materials",quantified:true,scope_stated:true,evidence_cited:true,found:"A well-supported claim: number, scope and certification are all stated.",rewrite:"No change needed. Keep the certificate on file."})
+   ]}
+];
+
+/* ---------- State ---------- */
+let current = SAMPLES[0];        // selected example (null when the viewer typed or uploaded their own text)
+let results = [];                // [{claim, score, reasons}]
+let runInfo = null;              // {kind:'saved'|'live', label}
+let filter = "all";
+let ctl = null;
+let sample = null;
+let downloads = null;
+
+/* ---------- Rendering ---------- */
+function el(tag, attrs = {}, ...kids){
+  const n = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs)) { if (k === "class") n.className = v; else if (k === "text") n.textContent = v; else n.setAttribute(k, v); }
+  for (const k of kids) if (k != null) n.append(k);
+  return n;
+}
+function renderSamples(){
+  const box = $("samples"); box.textContent = "";
+  for (const s of SAMPLES){
+    const b = el("button", {class:"sample", type:"button", "aria-pressed": String(current && current.id === s.id)}, el("b",{text:s.name}), el("span",{text:s.sub}));
+    b.onclick = () => selectSample(s);
+    box.append(b);
+  }
+}
+function selectSample(s){
+  current = s; $("src").value = s.text; showTab("paste");
+  renderSamples(); showSaved();
+}
+function showSaved(){
+  if (!current) return;
+  results = current.saved.map(c => Object.assign({claim:c}, assess(c)));
+  runInfo = {kind:"saved", label: current.source};
+  filter = "all"; renderResults();
+  setStatus("");
+}
+function renderResults(){
+  const sum = $("summary"); sum.textContent = "";
+  const n = [0,0,0]; results.forEach(r => n[r.score]++);
+  const total = results.length;
+  if (runInfo){
+    sum.append(el("div",{class:"runmeta"},
+      el("span",{class:"pill" + (runInfo.kind === "live" ? " live" : ""), text: runInfo.kind === "live" ? "Live run" : "Saved run"}),
+      el("span",{text: runInfo.label})));
+  }
+  const counts = el("div",{class:"counts"});
+  counts.append(el("div",{class:"count"}, el("span",{class:"n",text:String(total)}), el("span",{class:"l",text:"claims found"})));
+  [0,1,2].forEach(s => counts.append(el("div",{class:"count s"+s}, el("span",{class:"n",text:String(n[s])}), el("span",{class:"l",text:s + " · " + LABEL[s]}))));
+  sum.append(counts);
+  if (total){
+    const bar = el("div",{class:"bar", role:"img", "aria-label": `${n[0]} high risk, ${n[1]} need work, ${n[2]} supported`});
+    [0,1,2].forEach(s => { if (n[s]) { const i = el("i"); i.style.width = (100*n[s]/total) + "%"; i.style.background = `var(--r${s})`; bar.append(i); } });
+    sum.append(bar);
+  }
+  const fl = $("filters"); fl.textContent = "";
+  if (total){
+    [["all","All"],["0","High risk"],["1","Needs work"],["2","Supported"]].forEach(([k,t]) => {
+      const c = el("button",{class:"chip",type:"button","aria-pressed":String(filter === k), text:t});
+      c.onclick = () => { filter = k; renderResults(); };
+      fl.append(c);
+    });
+  }
+  const box = $("claims"); box.textContent = "";
+  const shown = results.map((r,i)=>[r,i]).filter(([r]) => filter === "all" || String(r.score) === filter).sort((a,b) => a[0].score - b[0].score || a[1]-b[1]);
+  if (!total) box.append(el("div",{class:"empty", text: runInfo ? "No green claims found in this text." : "Choose an example or add your own text, then press Check claims."}));
+  for (const [r] of shown) box.append(card(r));
+  $("csv").hidden = !(downloads && total);
+}
+function card(r){
+  const c = r.claim;
+  const where = c.who ? c.who : (c.page ? "Page " + c.page : "");
+  const node = el("article",{class:"claim s"+r.score});
+  node.append(el("div",{class:"chead"}, el("span",{class:"score s"+r.score, text: r.score + " · " + LABEL[r.score]}), el("span",{class:"where",text:where})));
+  node.append(el("blockquote",{text:c.quote}));
+  const ck = el("div",{class:"checks"});
+  for (const [k,label,dep] of CHECKS){
+    if (dep && !c[dep]) continue;
+    ck.append(el("span",{class:"ck " + (c[k] ? "ok":"bad"), text:(c[k] ? "✓ " : "✗ ") + label}));
+  }
+  if (c.offset_based) ck.append(el("span",{class:"ck bad",text:"! Offsets"}));
+  if (c.generic_term) ck.append(el("span",{class:"ck bad",text:"! Broad term"}));
+  if (c.absolute_claim) ck.append(el("span",{class:"ck bad",text:"! Absolute claim"}));
+  node.append(ck);
+  if (r.reasons.length){
+    const ul = el("ul",{class:"why"});
+    for (const [t,rule] of r.reasons) ul.append(el("li",{}, t, el("small",{text:rule})));
+    node.append(ul);
+  }
+  if (c.found) node.append(el("div",{class:"found"}, el("b",{text:"What regulators found: "}), c.found));
+  if (c.rewrite){
+    const p = el("p",{text:c.rewrite});
+    const btn = el("button",{class:"copy",type:"button",text:"Copy rewrite"});
+    btn.onclick = async () => {
+      try { await navigator.clipboard.writeText(c.rewrite); btn.textContent = "Copied"; }
+      catch { const rg = document.createRange(); rg.selectNodeContents(p); const s = getSelection(); s.removeAllRanges(); s.addRange(rg); btn.textContent = "Selected, press Ctrl/Cmd+C"; }
+      setTimeout(() => btn.textContent = "Copy rewrite", 2000);
+    };
+    node.append(el("div",{class:"rewrite"}, el("span",{class:"lbl",text:"Suggested rewrite"}), p, btn));
+  }
+  return node;
+}
+function setStatus(t, err){ const s = $("status"); s.textContent = t; s.className = "status" + (err ? " err" : ""); }
+
+/* ---------- Text preparation ---------- */
+const GREEN = /(sustainab|green|eco[- ]?friendly|\beco\b|climate|carbon|co2|co₂|emission|greenhouse|\bghg\b|net[- ]?zero|renewabl|recycl|circular|biodivers|nature|offset|compensat|neutral|environment|low[- ]carbon|lower[- ]carbon|decarbon|scope [123]|plastic|organic|biodegrad|compost|clean|energy|water|waste|deforest|planet|esg|responsib)/i;
+function toSentences(text){
+  const out = []; let page = null;
+  const parts = text.split(/(\[p\.?\s*\d+\])/i);
+  for (const part of parts){
+    const m = part.match(/^\[p\.?\s*(\d+)\]$/i);
+    if (m){ page = Number(m[1]); continue; }
+    for (const line of part.split(/\n+/)){
+      for (const s of line.split(/(?<=[.!?])\s+(?=[A-Z0-9“"(])/)){
+        const t = s.replace(/\s+/g," ").trim();
+        if (t.length >= 12) out.push({page, text:t});
+      }
+    }
+  }
+  return out;
+}
+function candidates(text){
+  let s = toSentences(text);
+  if (text.length > 4000) s = s.filter(x => GREEN.test(x.text) && x.text.length <= 700);
+  const seen = new Set(); s = s.filter(x => { const k = x.text.toLowerCase(); if (seen.has(k)) return false; seen.add(k); return true; });
+  return s;
+}
+const MAX_SENT = 200, BATCH = 40;
+
+function prompt(lines){
+  return `You are checking environmental ("green") claims for a compliance tool. From the numbered lines below, find each sentence that makes an environmental claim about the company, its products or its operations (materials, emissions, energy, climate, nature, recycling, offsets, targets). Skip sentences that only describe risks, methods, definitions or general context.
+
+For each claim return one object with exactly these fields:
+"line": the number of the line it came from,
+"quote": the claim copied word for word (max 300 characters),
+"topic": one of "emissions","energy","materials","offsets","product","target","other",
+"generic_term": true if it relies on a broad term such as eco-friendly, green, sustainable, responsible, clean, climate neutral, net zero, nature positive or lower-carbon without defining it in the same sentence,
+"absolute_claim": true if it claims a full benefit (recyclable, plastic-free, zero, 100%, carbon neutral, integrated everywhere) without stating limits or conditions,
+"quantified": true if it gives a number or percentage for what is claimed,
+"comparative": true if it compares with the past, a target or alternatives (reduced, lower, less, more, cleaner),
+"baseline_stated": true if a comparison names its baseline (a year or a named reference),
+"scope_stated": true if it says what the claim covers (which products, sites, countries, emission scopes or materials),
+"evidence_cited": true if the sentence names verification, assurance, a certification, a standard or a data source,
+"offset_based": true if a claim of neutral, reduced or compensated impact relies on carbon offsets or compensation,
+"future_target": true if it is a commitment, ambition or target about the future,
+"plan_stated": true if a future target comes with interim milestones, named actions or budget in the same sentence,
+"rewrite": a clearer, more precise version (max 220 characters) using only facts in the line; put facts the company must add in [square brackets].
+
+Judge only from the text given. Use true/false booleans. Reply with only a JSON array, or [] if there are no claims.
+
+Lines:
+${lines}`;
+}
+
+async function run(){
+  const text = $("src").value.trim();
+  if (!text){ setStatus("Add some text first, or choose an example.", true); return; }
+  if (!sample){ setStatus("Live checking needs Claude, which isn't available in this view. Open the page on claude.ai, or use Show saved result.", true); return; }
+  let sents = candidates(text);
+  if (!sents.length){ setStatus("No sentences about the environment were found in this text.", true); return; }
+  let note = "";
+  if (sents.length > MAX_SENT){ note = ` Checked the first ${MAX_SENT} of ${sents.length} sentences; narrow the page range to check the rest.`; sents = sents.slice(0, MAX_SENT); }
+  const batches = []; for (let i = 0; i < sents.length; i += BATCH) batches.push(sents.slice(i, i + BATCH));
+  results = []; filter = "all";
+  runInfo = {kind:"live", label: (current ? current.source + " · " : "") + `${sents.length} sentences sent to Claude`};
+  renderResults();
+  ctl = new AbortController();
+  $("run").disabled = true; $("saved").disabled = true; $("stop").hidden = false;
+  const seen = new Set();
+  try {
+    for (let b = 0; b < batches.length; b++){
+      const batch = batches[b];
+      setStatus(`Claude is reading ${batches.length > 1 ? `batch ${b+1} of ${batches.length}` : "the text"}…`);
+      const lines = batch.map((s,i) => `${i+1}. ${s.page ? "[p." + s.page + "] " : ""}${s.text}`).join("\n");
+      const arr = await sample.json(prompt(lines), { signal: ctl.signal });
+      if (!Array.isArray(arr)) continue;
+      for (const raw of arr){
+        if (!raw || typeof raw !== "object" || !raw.quote) continue;
+        const c = F({});
+        for (const k of Object.keys(c)) c[k] = raw[k] === true;
+        c.quote = String(raw.quote).slice(0, 400);
+        c.rewrite = raw.rewrite ? String(raw.rewrite).slice(0, 400) : "";
+        c.topic = String(raw.topic || "other");
+        const ln = Number(raw.line); const src = batch[ln - 1];
+        c.page = src && src.page ? src.page : null;
+        const key = c.quote.toLowerCase(); if (seen.has(key)) continue; seen.add(key);
+        results.push(Object.assign({claim:c}, assess(c)));
+      }
+      renderResults();
+    }
+    setStatus(`Done. ${results.length} claim${results.length === 1 ? "" : "s"} found.` + note);
+  } catch (e) {
+    const code = e && e.code;
+    const msg = {
+      cancelled: "Stopped. Results so far are shown.",
+      not_granted: "Claude wasn't allowed for this page, so live checks are off. Saved results still work.",
+      sampling_disabled: "Claude isn't available for this account. Saved results still work.",
+      rate_limited: "Too many requests or usage limit reached. Wait a minute, then try again.",
+      prompt_too_large: "That text is too long. Choose a smaller page range.",
+      invalid_json: "Claude's answer couldn't be read. Press Check claims to try again.",
+      session_expired: "Your claude.ai session expired. Sign in again, then retry.",
+      refused: "Claude declined this text. Try a different section."
+    }[code] || "Something went wrong reaching Claude. Press Check claims to try again.";
+    setStatus(msg, code !== "cancelled");
+    renderResults();
+  } finally {
+    $("run").disabled = false; $("saved").disabled = !current; $("stop").hidden = true; ctl = null;
+  }
+}
+
+/* ---------- PDF upload (read in the browser with pdf.js) ---------- */
+const PDFJS = "https://cdn.jsdelivr.net/npm/pdfjs-dist@6.2.108/legacy/build/";
+let pdfLib = null;
+async function loadPdfJs(){
+  if (pdfLib) return pdfLib;
+  const lib = await import(PDFJS + "pdf.min.mjs");
+  globalThis.pdfjsWorker = await import(PDFJS + "pdf.worker.min.mjs");  // run on the main thread; the page can't start outside workers
+  pdfLib = lib; return lib;
+}
+async function readPdf(file){
+  const st = $("pdfstatus");
+  st.className = "status"; st.textContent = `Opening ${file.name}…`;
+  try {
+    const lib = await loadPdfJs();
+    const doc = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported:false, useSystemFonts:true }).promise;
+    const from = Math.max(1, Number($("pfrom").value) || 1);
+    const to = Math.min(doc.numPages, Number($("pto").value) || doc.numPages);
+    if (from > to){ st.className = "status err"; st.textContent = `The report has ${doc.numPages} pages; check the page range.`; return; }
+    const out = [];
+    for (let p = from; p <= to; p++){
+      st.textContent = `Reading page ${p} of ${to}…`;
+      const page = await doc.getPage(p);
+      const tc = await page.getTextContent();
+      let s = "";
+      for (const it of tc.items){ if ("str" in it){ s += it.str; s += it.hasEOL ? "\n" : (it.str.endsWith(" ") ? "" : " "); } }
+      s = s.replace(/-\n(?=[a-z])/g, "").replace(/\n(?=[a-z])/g, " ").replace(/[ \t]+/g, " ").trim();
+      if (s) out.push(`[p.${p}] ${s}`);
+    }
+    const full = out.join("\n");
+    const cand = candidates(full);
+    $("src").value = cand.map(x => (x.page ? `[p.${x.page}] ` : "") + x.text).join("\n");
+    current = null; renderSamples(); $("saved").disabled = true;
+    results = []; runInfo = null; renderResults();
+    st.textContent = `Read pages ${from}–${to} of ${doc.numPages}. Found ${cand.length} sentences to check${cand.length > MAX_SENT ? ` (the first ${MAX_SENT} will be checked)` : ""}. Review them under Paste text, then press Check claims.`;
+    showTab("paste");
+    setStatus(`${file.name}: pages ${from}–${to} ready to check.`);
+  } catch (e) {
+    console.error(e);
+    st.className = "status err";
+    st.textContent = "This PDF couldn't be read. If it is a scanned image, copy the text in and paste it instead.";
+  }
+}
+
+/* ---------- Wiring ---------- */
+function showTab(which){
+  const paste = which === "paste";
+  $("tab-paste").setAttribute("aria-selected", String(paste));
+  $("tab-pdf").setAttribute("aria-selected", String(!paste));
+  $("pane-paste").hidden = !paste; $("pane-pdf").hidden = paste;
+}
+$("tab-paste").onclick = () => showTab("paste");
+$("tab-pdf").onclick = () => showTab("pdf");
+$("src").addEventListener("input", () => { if (current){ current = null; renderSamples(); $("saved").disabled = true; } });
+$("pdf").addEventListener("change", e => { const f = e.target.files[0]; if (f) readPdf(f); e.target.value = ""; });
+const drop = $("drop");
+drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); const f = e.dataTransfer.files[0]; if (f) readPdf(f); });
+$("run").onclick = run;
+$("stop").onclick = () => ctl && ctl.abort();
+$("saved").onclick = showSaved;
+$("csv").onclick = async () => {
+  const esc = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
+  const head = ["score","label","page_or_company","quote","reasons","rules","rewrite"];
+  const rows = results.map(r => [r.score, LABEL[r.score], r.claim.who || r.claim.page || "", r.claim.quote, r.reasons.map(x=>x[0]).join("; "), r.reasons.map(x=>x[1]).join(" | "), r.claim.rewrite].map(esc).join(","));
+  const csv = "﻿" + head.join(",") + "\n" + rows.join("\n");
+  try { await downloads.save({ filename: "green-claims-results.csv", data: csv }); }
+  catch (e) { if (e && e.code === "unavailable") $("csv").hidden = true; }
+};
+
+$("src").value = current.text;
+renderSamples(); showSaved();
+
+if (window.claude && window.claude.use){
+  window.claude.use("sample").then(s => { sample = s; if (!s) setStatus("Live checking isn't available in this view. Saved results still work."); });
+  window.claude.use("downloads").then(d => { downloads = d; renderResults(); });
+}
+})();
+</script>
+</body></html>
