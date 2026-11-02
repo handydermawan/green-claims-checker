@@ -1,177 +1,215 @@
 <!doctype html><html lang="en"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>Green-Claims Checker</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@500;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
 <style>
-/* Layout: a two-pane workbench. Source text on the left, scored claims on the right; stacks on phones. */
+/* Layout: enterprise review workspace. Navy app bar, page header with breadcrumb, source document panel left, review results right. */
 :root{
-  --bg:#F3F6F5; --panel:#FFFFFF; --ink:#13221E; --muted:#56655F; --line:#D5DEDA; --soft:#E8EEEB;
-  --accent:#0B5D6B; --accent-ink:#FFFFFF; --accent-soft:#DCEDEF;
-  --r0:#B42318; --r0-soft:#FDE8E6; --r1:#9A5B00; --r1-soft:#FDF0D8; --r2:#127A48; --r2-soft:#DDF3E6;
-  --display:"Schibsted Grotesk","Helvetica Neue",Arial,sans-serif;
-  --body:"IBM Plex Sans","Segoe UI",Arial,sans-serif;
-  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#1B2533; --muted:#5D6B7E; --line:#DCE2EA; --soft:#F6F8FB; --head:#F9FAFC;
+  --bar:#0F2440; --bar-ink:#FFFFFF; --bar-muted:#A9B8CC;
+  --accent:#1E5BB8; --accent-ink:#FFFFFF; --accent-soft:#E8F0FB;
+  --r0:#B42318; --r0-soft:#FDECEA; --r1:#A15C07; --r1-soft:#FEF4E2; --r2:#15803D; --r2-soft:#E7F6EC;
+  --font:"Source Sans 3","Segoe UI","Helvetica Neue",Arial,sans-serif;
+  --shadow:0 1px 2px rgba(16,36,64,.06),0 1px 3px rgba(16,36,64,.04);
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0E1614; --panel:#16211E; --ink:#E4ECE9; --muted:#9DB0A9; --line:#2A3833; --soft:#1D2A26;
-  --accent:#5FC0CE; --accent-ink:#0B1B1E; --accent-soft:#16343A;
-  --r0:#FF8A7E; --r0-soft:#3A1A17; --r1:#F2B65A; --r1-soft:#33270F; --r2:#5FD394; --r2-soft:#123222; color-scheme:dark}}
+  --bg:#0D131C; --panel:#151D29; --ink:#E3E9F1; --muted:#97A6B9; --line:#273244; --soft:#1A2433; --head:#18212E;
+  --bar:#0A1626; --bar-ink:#FFFFFF; --bar-muted:#8FA2BB;
+  --accent:#6EA3F2; --accent-ink:#0B1626; --accent-soft:#1B2C47;
+  --r0:#FF8F84; --r0-soft:#3A1B1A; --r1:#F3B860; --r1-soft:#33270F; --r2:#5FD08C; --r2-soft:#12301F; --shadow:none; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0E1614; --panel:#16211E; --ink:#E4ECE9; --muted:#9DB0A9; --line:#2A3833; --soft:#1D2A26;
-  --accent:#5FC0CE; --accent-ink:#0B1B1E; --accent-soft:#16343A;
-  --r0:#FF8A7E; --r0-soft:#3A1A17; --r1:#F2B65A; --r1-soft:#33270F; --r2:#5FD394; --r2-soft:#123222; color-scheme:dark}
+  --bg:#0D131C; --panel:#151D29; --ink:#E3E9F1; --muted:#97A6B9; --line:#273244; --soft:#1A2433; --head:#18212E;
+  --bar:#0A1626; --bar-ink:#FFFFFF; --bar-muted:#8FA2BB;
+  --accent:#6EA3F2; --accent-ink:#0B1626; --accent-soft:#1B2C47;
+  --r0:#FF8F84; --r0-soft:#3A1B1A; --r1:#F3B860; --r1-soft:#33270F; --r2:#5FD08C; --r2-soft:#12301F; --shadow:none; color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
-.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
-header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
-.brand h1{font-family:var(--display);font-weight:800;font-size:clamp(24px,3.2vw,32px);letter-spacing:-.01em;margin:0;text-wrap:balance}
-.brand p{margin:2px 0 0;color:var(--muted);max-width:62ch}
-.tag{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:3px 10px;white-space:nowrap}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;padding-block:0 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bar)}
+.appbar{background:var(--bar);color:var(--bar-ink);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.appbar .in{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:14px;min-height:56px;flex-wrap:wrap;padding-block:8px}
+.logo{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#2F7DE1,#19A08C);display:grid;place-items:center;flex:none}
+.logo svg{width:18px;height:18px}
+.appname{font-weight:700;font-size:17px;letter-spacing:.01em}
+.appsep{width:1px;height:22px;background:rgba(255,255,255,.18)}
+.appctx{color:var(--bar-muted);font-size:14px}
+.appbar .sp{flex:1}
+@media (max-width:560px){.appsep,.appctx{display:none}}
+.env{font-size:12.5px;font-weight:600;color:var(--bar-ink);background:rgba(255,255,255,.12);border-radius:4px;padding:3px 9px}
+.page{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:18px;padding-top:18px}
+.crumbs{font-size:13px;color:var(--muted)}
+.crumbs b{color:var(--ink);font-weight:600}
+.pagehead{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px}
+.pagehead h1{font-weight:700;font-size:clamp(22px,2.6vw,28px);margin:2px 0 0;letter-spacing:-.005em;text-wrap:balance}
+.pagehead p{margin:2px 0 0;color:var(--muted);max-width:70ch}
 .grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:18px;align-items:start}
 @media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
-.step{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
-h2{font-family:var(--display);font-weight:700;font-size:19px;margin:0}
-.samples{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-.sample{all:unset;cursor:pointer;border:1px solid var(--line);border-radius:8px;padding:9px 11px;display:flex;flex-direction:column;gap:2px;background:var(--panel)}
-.sample b{font-weight:600;font-size:14px}
-.sample span{font-size:12px;color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);min-width:0;overflow:hidden}
+.phead{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--line);background:var(--head)}
+.phead .num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:13px;display:grid;place-items:center;flex:none}
+h2{font-weight:700;font-size:16px;margin:0}
+.pbody{padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.step{display:none}
+.fieldlbl{font-size:13px;font-weight:600;color:var(--muted);margin:0}
+.samples{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.sample{all:unset;cursor:pointer;border:1px solid var(--line);border-radius:6px;padding:9px 11px 9px 40px;display:flex;flex-direction:column;gap:1px;background:var(--panel);position:relative}
+.sample::before{content:"";position:absolute;left:12px;top:11px;width:18px;height:22px;border-radius:3px;background:var(--soft);border:1px solid var(--line)}
+.sample::after{content:"";position:absolute;left:16px;top:18px;width:10px;height:2px;background:var(--muted);box-shadow:0 4px 0 var(--muted),0 8px 0 var(--muted);opacity:.6}
+.sample b{font-weight:600;font-size:14.5px}
+.sample span{font-size:12.5px;color:var(--muted)}
 .sample:hover{border-color:var(--accent)}
-.sample:focus-visible,button:focus-visible,textarea:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sample:focus-visible,button:focus-visible,textarea:focus-visible,input:focus-visible,summary:focus-visible,.drop:focus-within{outline:2px solid var(--accent);outline-offset:2px}
 .sample[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
-.tab{all:unset;cursor:pointer;padding:8px 12px;font-weight:500;font-size:14px;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
-.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
-textarea{width:100%;min-height:260px;resize:vertical;font-family:var(--mono);font-size:12.5px;line-height:1.55;color:var(--ink);background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:10px}
+.sample[aria-pressed="true"]::before{border-color:var(--accent)}
+.tabs{display:flex;gap:2px;background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:3px;align-self:flex-start}
+.tab{all:unset;cursor:pointer;padding:5px 14px;font-weight:600;font-size:13.5px;color:var(--muted);border-radius:4px}
+.tab[aria-selected="true"]{color:var(--ink);background:var(--panel);box-shadow:var(--shadow)}
+textarea{width:100%;min-height:240px;resize:vertical;font-family:var(--font);font-size:14px;line-height:1.55;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+code{font-family:var(--font);font-weight:600;background:var(--soft);border-radius:3px;padding:0 4px}
 .hint{font-size:13px;color:var(--muted);margin:0}
 .upload{display:flex;flex-direction:column;gap:10px}
-.drop{border:1.5px dashed var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--muted);font-size:14px}
+.drop{border:1.5px dashed var(--line);border-radius:8px;padding:22px;text-align:center;color:var(--muted);font-size:14px;cursor:pointer;background:var(--soft)}
+.drop strong{color:var(--accent)}
 .drop.over{border-color:var(--accent);background:var(--accent-soft)}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-label.small{font-size:13px;color:var(--muted);display:flex;gap:6px;align-items:center}
-input[type=number]{width:80px;font:inherit;font-size:14px;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
-.btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:8px;font-weight:600;font-size:14px;background:var(--accent);color:var(--accent-ink)}
-.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent);padding:9px 14px}
+label.small{font-size:13.5px;color:var(--muted);display:flex;gap:6px;align-items:center}
+input[type=number]{width:80px;font:inherit;font-size:14px;padding:5px 8px;border:1px solid var(--line);border-radius:5px;background:var(--panel);color:var(--ink)}
+.btn{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:6px;font-weight:600;font-size:14.5px;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:var(--panel);color:var(--ink);border:1px solid var(--line);padding:8px 14px}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
-.status{font-size:13px;color:var(--muted);min-height:1.5em;margin:0}
+.actions{border-top:1px solid var(--line);padding:14px 18px;display:flex;flex-direction:column;gap:8px;background:var(--head)}
+.status{font-size:13.5px;color:var(--muted);min-height:1.5em;margin:0}
 .status.err{color:var(--r0)}
 .summary{display:flex;flex-direction:column;gap:10px}
-.runmeta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
-.pill{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--soft);color:var(--muted)}
-.pill.live{background:var(--accent-soft);color:var(--accent)}
-.counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.runmeta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13.5px;color:var(--muted)}
+.pill{font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--soft);color:var(--muted);border:1px solid var(--line)}
+.pill.live{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.counts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 @media (max-width:520px){.counts{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.count{border-radius:8px;padding:10px 12px;background:var(--soft);display:flex;flex-direction:column}
-.count .n{font-family:var(--display);font-weight:800;font-size:26px;font-variant-numeric:tabular-nums;line-height:1.1}
-.count .l{font-size:12.5px;color:var(--muted)}
-.count.s0{background:var(--r0-soft)} .count.s0 .n{color:var(--r0)}
-.count.s1{background:var(--r1-soft)} .count.s1 .n{color:var(--r1)}
-.count.s2{background:var(--r2-soft)} .count.s2 .n{color:var(--r2)}
-.bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--soft)}
+.count{padding:10px 14px;display:flex;flex-direction:column;border-left:1px solid var(--line);background:var(--panel)}
+.count:first-child{border-left:0}
+.count .n{font-weight:700;font-size:26px;font-variant-numeric:tabular-nums;line-height:1.15}
+.count .l{font-size:13px;color:var(--muted)}
+.count.s0 .n{color:var(--r0)} .count.s1 .n{color:var(--r1)} .count.s2 .n{color:var(--r2)}
+.bar{display:flex;height:6px;border-radius:99px;overflow:hidden;background:var(--soft)}
 .bar i{display:block;height:100%}
 .filters{display:flex;flex-wrap:wrap;gap:6px}
-.chip{all:unset;cursor:pointer;font-size:13px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
-.chip[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);font-weight:600}
+.chip{all:unset;cursor:pointer;font-size:13.5px;padding:4px 12px;border-radius:5px;border:1px solid var(--line);color:var(--muted);background:var(--panel)}
+.chip[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);font-weight:600;background:var(--accent-soft)}
 .claims{display:flex;flex-direction:column;gap:10px;min-width:0}
-.claim{border:1px solid var(--line);border-left-width:4px;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--panel);min-width:0}
-.claim.s0{border-left-color:var(--r0)} .claim.s1{border-left-color:var(--r1)} .claim.s2{border-left-color:var(--r2)}
+.claim{border:1px solid var(--line);border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;background:var(--panel);min-width:0;position:relative}
+.claim::before{content:"";position:absolute;left:-1px;top:-1px;bottom:-1px;width:4px;border-radius:6px 0 0 6px}
+.claim.s0::before{background:var(--r0)} .claim.s1::before{background:var(--r1)} .claim.s2::before{background:var(--r2)}
 .chead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
-.score{font-weight:700;font-size:13px;padding:3px 10px;border-radius:999px;display:inline-flex;gap:6px;align-items:center}
+.score{font-weight:700;font-size:12.5px;padding:2px 9px;border-radius:4px;display:inline-flex;gap:6px;align-items:center;text-transform:uppercase;letter-spacing:.04em}
 .score.s0{background:var(--r0-soft);color:var(--r0)} .score.s1{background:var(--r1-soft);color:var(--r1)} .score.s2{background:var(--r2-soft);color:var(--r2)}
-.where{font-family:var(--mono);font-size:12px;color:var(--muted)}
-blockquote{margin:0;font-size:15px;line-height:1.5;padding-left:12px;border-left:2px solid var(--line);overflow-wrap:anywhere}
+.where{font-size:13px;color:var(--muted);font-weight:600}
+blockquote{margin:0;font-size:15.5px;line-height:1.5;font-weight:500;overflow-wrap:anywhere}
 .checks{display:flex;flex-wrap:wrap;gap:6px}
-.ck{font-size:12px;padding:2px 8px;border-radius:6px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
-.ck.ok{color:var(--r2);border-color:color-mix(in srgb,var(--r2) 40%,transparent)}
-.ck.bad{color:var(--r0);border-color:color-mix(in srgb,var(--r0) 40%,transparent)}
+.ck{font-size:12.5px;padding:1px 8px;border-radius:4px;background:var(--soft);color:var(--muted);white-space:nowrap;font-weight:600}
+.ck.ok{color:var(--r2);background:var(--r2-soft)}
+.ck.bad{color:var(--r0);background:var(--r0-soft)}
 .why{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px;font-size:14px}
-.why li small{display:block;color:var(--muted);font-size:12.5px}
-.found{font-size:13.5px;background:var(--soft);border-radius:8px;padding:8px 10px}
+.why li small{display:block;color:var(--muted);font-size:13px}
+.found{font-size:14px;background:var(--soft);border-radius:5px;padding:8px 10px;border:1px solid var(--line)}
 .found b{font-weight:600}
-.rewrite{background:var(--accent-soft);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
-.rewrite .lbl{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.rewrite{background:var(--accent-soft);border-radius:5px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.rewrite .lbl{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent)}
 .rewrite p{margin:0;overflow-wrap:anywhere}
-.copy{all:unset;cursor:pointer;font-size:12.5px;color:var(--accent);font-weight:600;align-self:flex-start}
-.empty{color:var(--muted);font-size:14px;padding:24px;text-align:center;border:1px dashed var(--line);border-radius:10px}
-details.how{border-top:1px solid var(--line);padding-top:12px}
-details.how summary{cursor:pointer;font-weight:600}
-.rules{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:10px}
+.copy{all:unset;cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;align-self:flex-start}
+.empty{color:var(--muted);font-size:14px;padding:28px;text-align:center;border:1px dashed var(--line);border-radius:6px}
+details.how summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--accent)}
+.rules{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}
 .rules td,.rules th{text-align:left;vertical-align:top;padding:7px 8px;border-bottom:1px solid var(--line)}
-.rules th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.rules th{font-size:12.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
 .tablewrap{overflow-x:auto}
-footer{font-size:12.5px;color:var(--muted);max-width:90ch}
-.spin{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .8s linear infinite;display:inline-block}
-@keyframes sp{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+footer{font-size:13px;color:var(--muted);max-width:100ch}
 </style>
 
+<header class="appbar">
+  <div class="in">
+    <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c8 0 14-6 14-14-8 0-14 5-14 13"/><path d="M5 19l7-7"/></svg></div>
+    <span class="appname">Green-Claims Checker</span>
+    <span class="appsep" aria-hidden="true"></span>
+    <span class="appctx">Claims review</span>
+    <span class="sp"></span>
+    <span class="env">Prototype</span>
+  </div>
+</header>
+
+<div class="page">
 <div class="wrap">
-  <header class="top">
-    <div class="brand">
-      <h1>Green-Claims Checker</h1>
-      <p>Paste marketing copy or upload a sustainability report. Claude finds each green claim; fixed rules score it 0, 1 or 2 and suggest compliant wording.</p>
+  <div class="pagehead">
+    <div>
+      <div class="crumbs">Reviews / <b>New review</b></div>
+      <h1>Review environmental claims</h1>
+      <p>Add marketing copy or a sustainability report. Claude identifies each green claim; fixed compliance rules rate it and propose compliant wording.</p>
     </div>
-    <span class="tag">Prototype · Nov 2026</span>
-  </header>
+  </div>
 
   <div class="grid">
     <section class="panel" aria-labelledby="h-in">
-      <p class="step">Step 1</p>
-      <h2 id="h-in">Choose the text to check</h2>
-      <div class="samples" id="samples" role="group" aria-label="Examples"></div>
-      <div class="tabs" role="tablist">
-        <button class="tab" role="tab" id="tab-paste" aria-selected="true" aria-controls="pane-paste">Paste text</button>
-        <button class="tab" role="tab" id="tab-pdf" aria-selected="false" aria-controls="pane-pdf">Upload PDF</button>
-      </div>
-      <div id="pane-paste" role="tabpanel" aria-labelledby="tab-paste" style="display:flex;flex-direction:column;gap:8px">
-        <textarea id="src" spellcheck="false" aria-label="Text to check"></textarea>
-        <p class="hint">Start a line with <code>[p.12]</code> to keep page numbers. Long texts are filtered to sentences about the environment before they are sent.</p>
-      </div>
-      <div id="pane-pdf" role="tabpanel" aria-labelledby="tab-pdf" class="upload" hidden>
-        <label class="drop" id="drop" for="pdf">
-          <strong>Drop a PDF here</strong> or click to choose one<br>
-          <span class="hint">For example the H&amp;M 2024, EQS 2023 or Shell 2025 report</span>
-        </label>
-        <input type="file" id="pdf" accept="application/pdf,.pdf" hidden>
-        <div class="row">
-          <label class="small" for="pfrom">Pages from <input type="number" id="pfrom" min="1" placeholder="1"></label>
-          <label class="small" for="pto">to <input type="number" id="pto" min="1" placeholder="end"></label>
+      <div class="phead"><span class="num">1</span><h2 id="h-in">Source document</h2></div>
+      <div class="pbody">
+        <p class="fieldlbl">Sample documents</p>
+        <div class="samples" id="samples" role="group" aria-label="Sample documents"></div>
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" id="tab-paste" aria-selected="true" aria-controls="pane-paste">Paste text</button>
+          <button class="tab" role="tab" id="tab-pdf" aria-selected="false" aria-controls="pane-pdf">Upload PDF</button>
         </div>
-        <p class="hint">Large reports: choose the sustainability section only (for example Shell's sustainability statement). The PDF is read in your browser; only the sentences about the environment go to Claude.</p>
-        <p class="status" id="pdfstatus" aria-live="polite"></p>
+        <div id="pane-paste" role="tabpanel" aria-labelledby="tab-paste" style="display:flex;flex-direction:column;gap:8px">
+          <textarea id="src" spellcheck="false" aria-label="Text to review"></textarea>
+          <p class="hint">Start a line with <code>[p.12]</code> to keep page references. Long documents are filtered to environment-related sentences before review.</p>
+        </div>
+        <div id="pane-pdf" role="tabpanel" aria-labelledby="tab-pdf" class="upload" hidden>
+          <label class="drop" id="drop" for="pdf">
+            <strong>Choose a PDF</strong> or drag it here<br>
+            <span class="hint">For example the H&amp;M 2024, EQS 2023 or Shell 2025 report</span>
+          </label>
+          <input type="file" id="pdf" accept="application/pdf,.pdf" hidden>
+          <div class="row">
+            <label class="small" for="pfrom">Pages from <input type="number" id="pfrom" min="1" placeholder="1"></label>
+            <label class="small" for="pto">to <input type="number" id="pto" min="1" placeholder="end"></label>
+          </div>
+          <p class="hint">For large reports, select the sustainability section only. The PDF is read in your browser; only environment-related sentences are sent to Claude.</p>
+          <p class="status" id="pdfstatus" aria-live="polite"></p>
+        </div>
+        <details class="how">
+          <summary>How ratings are decided</summary>
+          <p class="hint" style="margin-top:8px">Claude answers yes/no questions about each claim. The rating comes from fixed rules in this application, so the same answers always give the same rating.</p>
+          <div class="tablewrap"><table class="rules">
+            <tr><th>Rating</th><th>Rule</th></tr>
+            <tr><td><span class="score s0">0 · High risk</span></td><td>Relies on carbon offsets, <em>or</em> uses a broad or absolute term (“sustainable”, “recyclable”, “net zero”) with no evidence named, <em>or</em> is a future target with no plan or evidence.</td></tr>
+            <tr><td><span class="score s2">2 · Supported</span></td><td>No high-risk flag, and it gives a number, says what it covers, names evidence, states a baseline for any comparison and a plan for any target.</td></tr>
+            <tr><td><span class="score s1">1 · Needs work</span></td><td>Everything else: not misleading on its face, but missing a number, scope, baseline or evidence.</td></tr>
+          </table></div>
+        </details>
       </div>
-      <div class="row">
-        <button class="btn" id="run">Check claims with Claude</button>
-        <button class="btn ghost" id="stop" hidden>Stop</button>
-        <button class="btn ghost" id="saved">Show saved result</button>
+      <div class="actions">
+        <div class="row">
+          <button class="btn" id="run">Run review with Claude</button>
+          <button class="btn ghost" id="stop" hidden>Stop</button>
+          <button class="btn ghost" id="saved">Show saved review</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
       </div>
-      <p class="status" id="status" aria-live="polite"></p>
-      <details class="how">
-        <summary>How scores are decided</summary>
-        <p class="hint" style="margin-top:8px">Claude answers yes/no questions about each claim. The score comes from fixed rules in this page, so the same answers always give the same score.</p>
-        <div class="tablewrap"><table class="rules">
-          <tr><th>Score</th><th>Rule</th></tr>
-          <tr><td><span class="score s0">0 · High risk</span></td><td>Relies on carbon offsets, <em>or</em> uses a broad or absolute term (“sustainable”, “recyclable”, “net zero”) with no evidence named, <em>or</em> is a future target with no plan or evidence.</td></tr>
-          <tr><td><span class="score s2">2 · Supported</span></td><td>No high-risk flag, and it gives a number, says what it covers, names evidence, states a baseline for any comparison and a plan for any target.</td></tr>
-          <tr><td><span class="score s1">1 · Needs work</span></td><td>Everything else: not misleading on its face, but missing a number, scope, baseline or evidence.</td></tr>
-        </table></div>
-      </details>
     </section>
 
     <section class="panel" aria-labelledby="h-out">
-      <p class="step">Step 2</p>
-      <h2 id="h-out">Claims found</h2>
-      <div class="summary" id="summary"></div>
-      <div class="filters" id="filters" role="group" aria-label="Filter by score"></div>
-      <div class="claims" id="claims"></div>
-      <div class="row">
-        <button class="btn ghost" id="csv" hidden>Download results (CSV)</button>
+      <div class="phead"><span class="num">2</span><h2 id="h-out">Review results</h2></div>
+      <div class="pbody">
+        <div class="summary" id="summary"></div>
+        <div class="filters" id="filters" role="group" aria-label="Filter by rating"></div>
+        <div class="claims" id="claims"></div>
+        <div class="row">
+          <button class="btn ghost" id="csv" hidden>Export results (CSV)</button>
+        </div>
       </div>
     </section>
   </div>
 
   <footer>Prototype for demonstration, not legal advice. Claude can miss or misread claims, so check every result against the source. The EU rules cited apply to consumer marketing (from 27 September 2026); for annual reports they are used as a benchmark. Report excerpts are taken from the public PDFs; check the wording against the original before quoting it.</footer>
+</div>
 </div>
 
 <script>
@@ -293,7 +331,7 @@ function renderResults(){
   const total = results.length;
   if (runInfo){
     sum.append(el("div",{class:"runmeta"},
-      el("span",{class:"pill" + (runInfo.kind === "live" ? " live" : ""), text: runInfo.kind === "live" ? "Live run" : "Saved run"}),
+      el("span",{class:"pill" + (runInfo.kind === "live" ? " live" : ""), text: runInfo.kind === "live" ? "Live review" : "Saved review"}),
       el("span",{text: runInfo.label})));
   }
   const counts = el("div",{class:"counts"});
@@ -315,7 +353,7 @@ function renderResults(){
   }
   const box = $("claims"); box.textContent = "";
   const shown = results.map((r,i)=>[r,i]).filter(([r]) => filter === "all" || String(r.score) === filter).sort((a,b) => a[0].score - b[0].score || a[1]-b[1]);
-  if (!total) box.append(el("div",{class:"empty", text: running ? "Waiting for Claude's first answer…" : runInfo ? "No green claims found in this text." : "Choose an example or add your own text, then press Check claims."}));
+  if (!total) box.append(el("div",{class:"empty", text: running ? "Waiting for Claude's first answer…" : runInfo ? "No green claims found in this text." : "Choose an example or add your own text, then press Run review."}));
   for (const [r] of shown) box.append(card(r));
   $("csv").hidden = !(downloads && total);
 }
@@ -407,7 +445,7 @@ ${lines}`;
 async function run(){
   const text = $("src").value.trim();
   if (!text){ setStatus("Add some text first, or choose an example.", true); return; }
-  if (!sample){ setStatus("Live checking needs Claude, which isn't available in this view. Open the page on claude.ai, or use Show saved result.", true); return; }
+  if (!sample){ setStatus("Live checking needs Claude, which isn't available in this view. Open the page on claude.ai, or use Show saved review.", true); return; }
   let sents = candidates(text);
   if (!sents.length){ setStatus("No sentences about the environment were found in this text.", true); return; }
   let note = "";
@@ -449,10 +487,10 @@ async function run(){
       sampling_disabled: "Claude isn't available for this account. Saved results still work.",
       rate_limited: "Too many requests or usage limit reached. Wait a minute, then try again.",
       prompt_too_large: "That text is too long. Choose a smaller page range.",
-      invalid_json: "Claude's answer couldn't be read. Press Check claims to try again.",
+      invalid_json: "Claude's answer couldn't be read. Press Run review to try again.",
       session_expired: "Your claude.ai session expired. Sign in again, then retry.",
       refused: "Claude declined this text. Try a different section."
-    }[code] || "Something went wrong reaching Claude. Press Check claims to try again.";
+    }[code] || "Something went wrong reaching Claude. Press Run review to try again.";
     setStatus(msg, code !== "cancelled");
     renderResults();
   } finally {
@@ -494,7 +532,7 @@ async function readPdf(file){
     $("src").value = cand.map(x => (x.page ? `[p.${x.page}] ` : "") + x.text).join("\n");
     current = null; renderSamples(); $("saved").disabled = true;
     results = []; runInfo = null; renderResults();
-    st.textContent = `Read pages ${from}–${to} of ${doc.numPages}. Found ${cand.length} sentences to check${cand.length > MAX_SENT ? ` (the first ${MAX_SENT} will be checked)` : ""}. Review them under Paste text, then press Check claims.`;
+    st.textContent = `Read pages ${from}–${to} of ${doc.numPages}. Found ${cand.length} sentences to check${cand.length > MAX_SENT ? ` (the first ${MAX_SENT} will be checked)` : ""}. Review them under Paste text, then press Run review.`;
     showTab("paste");
     setStatus(`${file.name}: pages ${from}–${to} ready to check.`);
   } catch (e) {
