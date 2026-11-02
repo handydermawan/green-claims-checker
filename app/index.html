@@ -257,6 +257,7 @@ let results = [];                // [{claim, score, reasons}]
 let runInfo = null;              // {kind:'saved'|'live', label}
 let filter = "all";
 let ctl = null;
+let running = false;
 let sample = null;
 let downloads = null;
 
@@ -314,7 +315,7 @@ function renderResults(){
   }
   const box = $("claims"); box.textContent = "";
   const shown = results.map((r,i)=>[r,i]).filter(([r]) => filter === "all" || String(r.score) === filter).sort((a,b) => a[0].score - b[0].score || a[1]-b[1]);
-  if (!total) box.append(el("div",{class:"empty", text: runInfo ? "No green claims found in this text." : "Choose an example or add your own text, then press Check claims."}));
+  if (!total) box.append(el("div",{class:"empty", text: running ? "Waiting for Claude's first answer…" : runInfo ? "No green claims found in this text." : "Choose an example or add your own text, then press Check claims."}));
   for (const [r] of shown) box.append(card(r));
   $("csv").hidden = !(downloads && total);
 }
@@ -414,7 +415,7 @@ async function run(){
   const batches = []; for (let i = 0; i < sents.length; i += BATCH) batches.push(sents.slice(i, i + BATCH));
   results = []; filter = "all";
   runInfo = {kind:"live", label: (current ? current.source + " · " : "") + `${sents.length} sentences sent to Claude`};
-  renderResults();
+  running = true; renderResults();
   ctl = new AbortController();
   $("run").disabled = true; $("saved").disabled = true; $("stop").hidden = false;
   const seen = new Set();
@@ -455,6 +456,7 @@ async function run(){
     setStatus(msg, code !== "cancelled");
     renderResults();
   } finally {
+    running = false; renderResults();
     $("run").disabled = false; $("saved").disabled = !current; $("stop").hidden = true; ctl = null;
   }
 }
