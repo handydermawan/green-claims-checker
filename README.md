@@ -2,6 +2,7 @@
 
 Find environmental ("green") claims in marketing copy and sustainability reports, rate each one for greenwashing risk, and get compliant rewrites, before a regulator does.
 
+![The Green-Claims Checker review workspace](docs/screenshots/overview.png)
 
 > **Prototype.** Built for demonstration and research. Not legal advice.
 
@@ -32,6 +33,7 @@ Checking claims with a lawyer costs £295–£579 an hour, so most small brands 
 
 Each problem is linked to the rule behind it (EU Directive 2024/825, UK CMA Green Claims Code). See [docs/SCORING.md](docs/SCORING.md).
 
+![A rated claim with reasons and a suggested rewrite](docs/screenshots/claim-card.png)
 
 ## What's in this repository
 
@@ -43,8 +45,10 @@ examples/regulator_cases.txt   Sample input: four penalised claims and one good 
 docs/TUTORIAL.md               Step-by-step guide
 docs/SCORING.md                Rating rules and legal sources
 docs/screenshots/              Images used in the docs
+CHANGELOG.md                   Every version, what changed and why
 ```
 
+Every version is saved as a git tag (`v0.1.0` to `v0.5.0`). To open an older version: `git checkout v0.1.0`, then `git checkout main` to come back.
 
 ## Quick start
 

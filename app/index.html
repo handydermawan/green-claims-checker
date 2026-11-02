@@ -3,31 +3,31 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
 <style>
-/* Layout: enterprise review workspace. Navy app bar, page header with breadcrumb, source document panel left, review results right. */
+/* Layout: enterprise review workspace in a forest-and-sage palette. Pine app bar, page header with breadcrumb, source document panel left, review results right. */
 :root{
-  --bg:#F3F5F8; --panel:#FFFFFF; --ink:#1B2533; --muted:#5D6B7E; --line:#DCE2EA; --soft:#F6F8FB; --head:#F9FAFC;
-  --bar:#0F2440; --bar-ink:#FFFFFF; --bar-muted:#A9B8CC;
-  --accent:#1E5BB8; --accent-ink:#FFFFFF; --accent-soft:#E8F0FB;
-  --r0:#B42318; --r0-soft:#FDECEA; --r1:#A15C07; --r1-soft:#FEF4E2; --r2:#15803D; --r2-soft:#E7F6EC;
+  --bg:#F2F5EF; --panel:#FFFFFF; --ink:#1C2A22; --muted:#5B6B60; --line:#D7E0D3; --soft:#F1F5EE; --head:#F7F9F5;
+  --bar:#163A2B; --bar-ink:#FFFFFF; --bar-muted:#AFC6B6;
+  --accent:#2D6A4F; --accent-ink:#FFFFFF; --accent-soft:#E2EFE6;
+  --r0:#B42318; --r0-soft:#FDECEA; --r1:#A15C07; --r1-soft:#FEF4E2; --r2:#3E8E2F; --r2-soft:#E9F5E3;
   --font:"Source Sans 3","Segoe UI","Helvetica Neue",Arial,sans-serif;
-  --shadow:0 1px 2px rgba(16,36,64,.06),0 1px 3px rgba(16,36,64,.04);
+  --shadow:0 1px 2px rgba(22,58,43,.06),0 1px 3px rgba(22,58,43,.04);
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0D131C; --panel:#151D29; --ink:#E3E9F1; --muted:#97A6B9; --line:#273244; --soft:#1A2433; --head:#18212E;
-  --bar:#0A1626; --bar-ink:#FFFFFF; --bar-muted:#8FA2BB;
-  --accent:#6EA3F2; --accent-ink:#0B1626; --accent-soft:#1B2C47;
-  --r0:#FF8F84; --r0-soft:#3A1B1A; --r1:#F3B860; --r1-soft:#33270F; --r2:#5FD08C; --r2-soft:#12301F; --shadow:none; color-scheme:dark}}
+  --bg:#0F1612; --panel:#17211B; --ink:#E4ECE6; --muted:#9BB0A2; --line:#283A2F; --soft:#1C2A22; --head:#1A251F;
+  --bar:#0C1D15; --bar-ink:#FFFFFF; --bar-muted:#8FAE99;
+  --accent:#74C69D; --accent-ink:#0C1D15; --accent-soft:#1C3A2B;
+  --r0:#FF8F84; --r0-soft:#3A1B1A; --r1:#F3B860; --r1-soft:#33270F; --r2:#9AD77E; --r2-soft:#1D3317; --shadow:none; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0D131C; --panel:#151D29; --ink:#E3E9F1; --muted:#97A6B9; --line:#273244; --soft:#1A2433; --head:#18212E;
-  --bar:#0A1626; --bar-ink:#FFFFFF; --bar-muted:#8FA2BB;
-  --accent:#6EA3F2; --accent-ink:#0B1626; --accent-soft:#1B2C47;
-  --r0:#FF8F84; --r0-soft:#3A1B1A; --r1:#F3B860; --r1-soft:#33270F; --r2:#5FD08C; --r2-soft:#12301F; --shadow:none; color-scheme:dark}
+  --bg:#0F1612; --panel:#17211B; --ink:#E4ECE6; --muted:#9BB0A2; --line:#283A2F; --soft:#1C2A22; --head:#1A251F;
+  --bar:#0C1D15; --bar-ink:#FFFFFF; --bar-muted:#8FAE99;
+  --accent:#74C69D; --accent-ink:#0C1D15; --accent-soft:#1C3A2B;
+  --r0:#FF8F84; --r0-soft:#3A1B1A; --r1:#F3B860; --r1-soft:#33270F; --r2:#9AD77E; --r2-soft:#1D3317; --shadow:none; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;padding-block:0 40px}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bar)}
 .appbar{background:var(--bar);color:var(--bar-ink);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .appbar .in{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:14px;min-height:56px;flex-wrap:wrap;padding-block:8px}
-.logo{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#2F7DE1,#19A08C);display:grid;place-items:center;flex:none}
+.logo{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#52B788,#2D6A4F);display:grid;place-items:center;flex:none}
 .logo svg{width:18px;height:18px}
 .appname{font-weight:700;font-size:17px;letter-spacing:.01em}
 .appsep{width:1px;height:22px;background:rgba(255,255,255,.18)}
