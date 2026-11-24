@@ -2,6 +2,16 @@
 
 Every version of the Green-Claims Checker. Each is a git tag, so `git checkout <tag>` opens it exactly as it was.
 
+## [0.6.0] — 24 November 2026: clearer verdicts and reports
+
+- Verdicts renamed **Not approved / Moderately approved / Approved** (were High risk / Needs work / Supported), in the app, the Python script, the CSV and the docs.
+- Every claim card now explains its verdict in one sentence.
+- **Copy report** button: a plain-text summary to paste into an email.
+- **Demo mode**: outside claude.ai the app says so clearly and keeps the saved reviews working. Error messages now say what to do next.
+- Python: checks several files in one run (`--out-dir`), and writes a readable HTML report next to each CSV.
+- Automatic tests for the rules (`tests/test_rules.py`).
+- Screenshots refreshed.
+
 ## [0.5.0] — 2 November 2026: sustainability colours
 
 - New forest-and-sage palette: pine app bar, sage background, green leaf logo, in light and dark mode.

@@ -23,13 +23,13 @@ Checking claims with a lawyer costs £295–£579 an hour, so most small brands 
 
 1. **Find.** A language model reads the text and extracts each sentence that makes an environmental claim.
 2. **Answer.** For each claim it answers ten yes/no questions: does it give a number, state its scope, name evidence, rely on offsets, make a future promise, and so on.
-3. **Rate.** **Fixed rules in code** turn those answers into a rating, so the model never decides the rating itself. The same answers always give the same rating, so every result can be audited.
+3. **Decide.** **Fixed rules in code** turn those answers into a verdict, so the model never decides the verdict itself. The same answers always give the same verdict, so every result can be audited.
 
 | Rating | Rule |
 |---|---|
-| **0 · High risk** | Relies on carbon offsets, *or* uses a broad or absolute term ("sustainable", "recyclable", "net zero") with no evidence named, *or* is a future target with no plan or evidence |
-| **2 · Supported** | No high-risk flag, and it gives a number, says what it covers, names evidence, and states a baseline for any comparison and a plan for any target |
-| **1 · Needs work** | Everything else |
+| **Not approved** | Relies on carbon offsets, *or* uses a broad or absolute term ("sustainable", "recyclable", "net zero") with no evidence named, *or* is a future target with no plan or evidence |
+| **Approved** | No red flag, and it gives a number, says what it covers, names evidence, and states a baseline for any comparison and a plan for any target |
+| **Moderately approved** | Everything else |
 
 Each problem is linked to the rule behind it (EU Directive 2024/825, UK CMA Green Claims Code). See [docs/SCORING.md](docs/SCORING.md).
 
@@ -39,9 +39,11 @@ Each problem is linked to the rule behind it (EU Directive 2024/825, UK CMA Gree
 
 ```
 app/index.html                 Web app (single file: HTML, CSS, JavaScript)
-python/green_claims_checker.py Command-line version for whole PDFs → CSV
+python/green_claims_checker.py Command-line version: whole PDFs → CSV + HTML report
 python/requirements.txt        Python dependencies
+tests/test_rules.py            Automatic tests for the rules (python -m unittest discover tests)
 examples/regulator_cases.txt   Sample input: four penalised claims and one good one
+examples/sample_report.html    What the HTML report looks like
 docs/TUTORIAL.md               Step-by-step guide
 docs/SCORING.md                Rating rules and legal sources
 docs/screenshots/              Images used in the docs
@@ -72,9 +74,18 @@ export ANTHROPIC_API_KEY="sk-ant-..."        # Windows: set ANTHROPIC_API_KEY=sk
 python green_claims_checker.py ../examples/regulator_cases.txt
 python green_claims_checker.py report.pdf --pages 336-400 --out results.csv
 python green_claims_checker.py report.pdf --dry-run      # free: lists the sentences that would be sent
+python green_claims_checker.py reports/*.pdf --out-dir results   # several reports at once
 ```
 
-Settings you're likely to change are marked `# EDIT ME` in the script: model, batch size, keyword filter, rule text, and the rating rules in `assess()`.
+Settings you're likely to change are marked `# EDIT ME` in the script: model, batch size, keyword filter, rule text, and the rules in `assess()`.
+
+Each run writes a CSV (for Excel) and an HTML report with the same name (open it in any browser, or print it to PDF).
+
+To check the rules still behave as documented after editing them:
+
+```bash
+python -m unittest discover tests
+```
 
 ## Test reports
 

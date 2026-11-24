@@ -1,4 +1,10 @@
-<!doctype html><html lang="en"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>Green-Claims Checker</title>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Green-Claims Checker</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
@@ -103,6 +109,8 @@ input[type=number]{width:80px;font:inherit;font-size:14px;padding:5px 8px;border
 .chead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
 .score{font-weight:700;font-size:12.5px;padding:2px 9px;border-radius:4px;display:inline-flex;gap:6px;align-items:center;text-transform:uppercase;letter-spacing:.04em}
 .score.s0{background:var(--r0-soft);color:var(--r0)} .score.s1{background:var(--r1-soft);color:var(--r1)} .score.s2{background:var(--r2-soft);color:var(--r2)}
+html{background:var(--bg)}
+.verdict-why{margin:0;font-size:14px;font-weight:600;color:var(--ink)}
 .where{font-size:13px;color:var(--muted);font-weight:600}
 blockquote{margin:0;font-size:15.5px;line-height:1.5;font-weight:500;overflow-wrap:anywhere}
 .checks{display:flex;flex-wrap:wrap;gap:6px}
@@ -126,7 +134,8 @@ details.how summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--ac
 footer{font-size:13px;color:var(--muted);max-width:100ch}
 .powered{font-size:12px;color:var(--muted);opacity:.75;text-align:center;letter-spacing:.03em;padding-top:8px;border-top:1px solid var(--line)}
 </style>
-
+</head>
+<body>
 <header class="appbar">
   <div class="in">
     <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c8 0 14-6 14-14-8 0-14 5-14 13"/><path d="M5 19l7-7"/></svg></div>
@@ -134,7 +143,7 @@ footer{font-size:13px;color:var(--muted);max-width:100ch}
     <span class="appsep" aria-hidden="true"></span>
     <span class="appctx">Claims review</span>
     <span class="sp"></span>
-    <span class="env">Prototype</span>
+    <span class="env" id="envtag">Prototype</span>
   </div>
 </header>
 
@@ -176,13 +185,13 @@ footer{font-size:13px;color:var(--muted);max-width:100ch}
           <p class="status" id="pdfstatus" aria-live="polite"></p>
         </div>
         <details class="how">
-          <summary>How ratings are decided</summary>
-          <p class="hint" style="margin-top:8px">Claude answers yes/no questions about each claim. The rating comes from fixed rules in this application, so the same answers always give the same rating.</p>
+          <summary>How verdicts are decided</summary>
+          <p class="hint" style="margin-top:8px">Claude answers yes/no questions about each claim. The verdict comes from fixed rules in this application, so the same answers always give the same verdict.</p>
           <div class="tablewrap"><table class="rules">
-            <tr><th>Rating</th><th>Rule</th></tr>
-            <tr><td><span class="score s0">0 · High risk</span></td><td>Relies on carbon offsets, <em>or</em> uses a broad or absolute term (“sustainable”, “recyclable”, “net zero”) with no evidence named, <em>or</em> is a future target with no plan or evidence.</td></tr>
-            <tr><td><span class="score s2">2 · Supported</span></td><td>No high-risk flag, and it gives a number, says what it covers, names evidence, states a baseline for any comparison and a plan for any target.</td></tr>
-            <tr><td><span class="score s1">1 · Needs work</span></td><td>Everything else: not misleading on its face, but missing a number, scope, baseline or evidence.</td></tr>
+            <tr><th>Verdict</th><th>Rule</th></tr>
+            <tr><td><span class="score s0">Not approved</span></td><td>Relies on carbon offsets, <em>or</em> uses a broad or absolute term (“sustainable”, “recyclable”, “net zero”) with no evidence named, <em>or</em> is a future target with no plan or evidence.</td></tr>
+            <tr><td><span class="score s2">Approved</span></td><td>No red flag, and it gives a number, says what it covers, names evidence, states a baseline for any comparison and a plan for any target.</td></tr>
+            <tr><td><span class="score s1">Moderately approved</span></td><td>Everything else: not misleading on its face, but missing a number, scope, baseline or evidence.</td></tr>
           </table></div>
         </details>
       </div>
@@ -200,10 +209,12 @@ footer{font-size:13px;color:var(--muted);max-width:100ch}
       <div class="phead"><span class="num">2</span><h2 id="h-out">Review results</h2></div>
       <div class="pbody">
         <div class="summary" id="summary"></div>
-        <div class="filters" id="filters" role="group" aria-label="Filter by rating"></div>
+        <div class="filters" id="filters" role="group" aria-label="Filter by verdict"></div>
         <div class="claims" id="claims"></div>
         <div class="row">
+          <button class="btn ghost" id="copyrep" hidden>Copy report</button>
           <button class="btn ghost" id="csv" hidden>Export results (CSV)</button>
+          <span class="hint" id="copymsg" aria-live="polite"></span>
         </div>
       </div>
     </section>
@@ -230,12 +241,14 @@ const RULE = {
   scope:   "UK CMA Green Claims Code: say what the claim covers, considering the full life cycle.",
   number:  "UK CMA Green Claims Code: claims must be clear; give the figure behind the claim."
 };
+const RED_SET = new Set();
 function assess(c){
   const red = [], amber = [];
   if (c.offset_based) red.push(["Relies on carbon offsets or compensation", RULE.offset]);
   if (c.generic_term && !c.evidence_cited) red.push(["Broad term with no evidence named", RULE.generic]);
   if (c.absolute_claim && !c.evidence_cited) red.push(["Absolute claim with no limits or evidence", RULE.absolute]);
   if (c.future_target && !c.plan_stated && !c.evidence_cited) red.push(["Future target with no plan or evidence", RULE.future]);
+  red.forEach(x => RED_SET.add(x[0]));
   if (!c.quantified) amber.push(["No number given", RULE.number]);
   if (!c.scope_stated) amber.push(["Doesn't say what it covers", RULE.scope]);
   if (c.comparative && !c.baseline_stated) amber.push(["Comparison with no baseline", RULE.baseline]);
@@ -246,7 +259,7 @@ function assess(c){
   else if (c.quantified && c.scope_stated && c.evidence_cited && (!c.comparative || c.baseline_stated) && (!c.future_target || c.plan_stated)) score = 2;
   return { score, reasons: red.concat(amber) };
 }
-const LABEL = ["High risk", "Needs work", "Supported"];
+const LABEL = ["Not approved", "Moderately approved", "Approved"];
 const CHECKS = [["quantified","Number"],["scope_stated","Scope"],["evidence_cited","Evidence"],["baseline_stated","Baseline","comparative"],["plan_stated","Plan","future_target"]];
 
 /* ---------- Examples with saved results ---------- */
@@ -338,16 +351,16 @@ function renderResults(){
   }
   const counts = el("div",{class:"counts"});
   counts.append(el("div",{class:"count"}, el("span",{class:"n",text:String(total)}), el("span",{class:"l",text:"claims found"})));
-  [0,1,2].forEach(s => counts.append(el("div",{class:"count s"+s}, el("span",{class:"n",text:String(n[s])}), el("span",{class:"l",text:s + " · " + LABEL[s]}))));
+  [0,1,2].forEach(s => counts.append(el("div",{class:"count s"+s}, el("span",{class:"n",text:String(n[s])}), el("span",{class:"l",text:LABEL[s]}))));
   sum.append(counts);
   if (total){
-    const bar = el("div",{class:"bar", role:"img", "aria-label": `${n[0]} high risk, ${n[1]} need work, ${n[2]} supported`});
+    const bar = el("div",{class:"bar", role:"img", "aria-label": `${n[0]} not approved, ${n[1]} moderately approved, ${n[2]} approved`});
     [0,1,2].forEach(s => { if (n[s]) { const i = el("i"); i.style.width = (100*n[s]/total) + "%"; i.style.background = `var(--r${s})`; bar.append(i); } });
     sum.append(bar);
   }
   const fl = $("filters"); fl.textContent = "";
   if (total){
-    [["all","All"],["0","High risk"],["1","Needs work"],["2","Supported"]].forEach(([k,t]) => {
+    [["all","All"],["0","Not approved"],["1","Moderately approved"],["2","Approved"]].forEach(([k,t]) => {
       const c = el("button",{class:"chip",type:"button","aria-pressed":String(filter === k), text:t});
       c.onclick = () => { filter = k; renderResults(); };
       fl.append(c);
@@ -358,13 +371,21 @@ function renderResults(){
   if (!total) box.append(el("div",{class:"empty", text: running ? "Waiting for Claude's first answer…" : runInfo ? "No green claims found in this text." : "Choose an example or add your own text, then press Run review."}));
   for (const [r] of shown) box.append(card(r));
   $("csv").hidden = !(downloads && total);
+  $("copyrep").hidden = !total;
+}
+function verdictWhy(r){
+  const c = r.claim;
+  if (r.score === 0) return "Not approved because: " + r.reasons.filter((x,i) => i < 4).filter(x => RED_SET.has(x[0])).map(x => x[0].toLowerCase()).join("; ") + ".";
+  if (r.score === 2) return "Approved: it gives a number, says what it covers and names its evidence" + (c.comparative ? ", with a baseline" : "") + (c.future_target ? " and a plan" : "") + ".";
+  return "Moderately approved: not misleading on its face, but " + r.reasons.map(x => x[0].toLowerCase()).join("; ") + ".";
 }
 function card(r){
   const c = r.claim;
   const where = c.who ? c.who : (c.page ? "Page " + c.page : "");
   const node = el("article",{class:"claim s"+r.score});
-  node.append(el("div",{class:"chead"}, el("span",{class:"score s"+r.score, text: r.score + " · " + LABEL[r.score]}), el("span",{class:"where",text:where})));
+  node.append(el("div",{class:"chead"}, el("span",{class:"score s"+r.score, text: LABEL[r.score]}), el("span",{class:"where",text:where})));
   node.append(el("blockquote",{text:c.quote}));
+  node.append(el("p",{class:"verdict-why",text:verdictWhy(r)}));
   const ck = el("div",{class:"checks"});
   for (const [k,label,dep] of CHECKS){
     if (dep && !c[dep]) continue;
@@ -447,7 +468,7 @@ ${lines}`;
 async function run(){
   const text = $("src").value.trim();
   if (!text){ setStatus("Add some text first, or choose an example.", true); return; }
-  if (!sample){ setStatus("Live checking needs Claude, which isn't available in this view. Open the page on claude.ai, or use Show saved review.", true); return; }
+  if (!sample){ setStatus("Live review is off in this view (demo mode). It only works when the page is opened on claude.ai with Claude access allowed. The saved reviews still work: pick a sample document.", true); return; }
   let sents = candidates(text);
   if (!sents.length){ setStatus("No sentences about the environment were found in this text.", true); return; }
   let note = "";
@@ -485,14 +506,14 @@ async function run(){
     const code = e && e.code;
     const msg = {
       cancelled: "Stopped. Results so far are shown.",
-      not_granted: "Claude wasn't allowed for this page, so live checks are off. Saved results still work.",
+      not_granted: "Claude access was not allowed for this page, so live review is off. To turn it on, reload the page and choose Allow. Saved reviews still work.",
       sampling_disabled: "Claude isn't available for this account. Saved results still work.",
-      rate_limited: "Too many requests or usage limit reached. Wait a minute, then try again.",
+      rate_limited: "Usage limit reached for now. Wait a minute and try again, or review fewer pages at once.",
       prompt_too_large: "That text is too long. Choose a smaller page range.",
       invalid_json: "Claude's answer couldn't be read. Press Run review to try again.",
       session_expired: "Your claude.ai session expired. Sign in again, then retry.",
       refused: "Claude declined this text. Try a different section."
-    }[code] || "Something went wrong reaching Claude. Press Run review to try again.";
+    }[code] || "Something went wrong reaching Claude. Check your internet connection, then press Run review again. Saved reviews still work.";
     setStatus(msg, code !== "cancelled");
     renderResults();
   } finally {
@@ -562,10 +583,32 @@ drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("
 $("run").onclick = run;
 $("stop").onclick = () => ctl && ctl.abort();
 $("saved").onclick = showSaved;
+function reportText(){
+  const n = [0,0,0]; results.forEach(r => n[r.score]++);
+  const lines = ["Green-Claims Checker report", (runInfo ? runInfo.label : "") + " · " + new Date().toLocaleDateString("en-GB"),
+    `${results.length} claims: ${n[0]} not approved, ${n[1]} moderately approved, ${n[2]} approved`, ""];
+  results.slice().sort((a,b) => a.score - b.score).forEach((r,i) => {
+    const c = r.claim;
+    lines.push(`${i+1}. ${LABEL[r.score].toUpperCase()}${c.who ? " · " + c.who : c.page ? " · page " + c.page : ""}`);
+    lines.push(`   Claim: ${c.quote}`);
+    lines.push(`   Why: ${verdictWhy(r)}`);
+    r.reasons.forEach(x => lines.push(`   - ${x[0]} (${x[1]})`));
+    if (c.rewrite) lines.push(`   Suggested rewrite: ${c.rewrite}`);
+    lines.push("");
+  });
+  lines.push("Prototype, not legal advice. Check every result against the source.");
+  return lines.join("\n");
+}
+$("copyrep").onclick = async () => {
+  const msg = $("copymsg"); const txt = reportText();
+  try { await navigator.clipboard.writeText(txt); msg.textContent = "Report copied. Paste it into an email or document."; }
+  catch { msg.textContent = "Copy was blocked by the browser. Use Export results instead, or select the results and copy them."; }
+  setTimeout(() => msg.textContent = "", 4000);
+};
 $("csv").onclick = async () => {
   const esc = v => `"${String(v ?? "").replace(/"/g,'""')}"`;
-  const head = ["score","label","page_or_company","quote","reasons","rules","rewrite"];
-  const rows = results.map(r => [r.score, LABEL[r.score], r.claim.who || r.claim.page || "", r.claim.quote, r.reasons.map(x=>x[0]).join("; "), r.reasons.map(x=>x[1]).join(" | "), r.claim.rewrite].map(esc).join(","));
+  const head = ["verdict","page_or_company","quote","why","reasons","rules","rewrite"];
+  const rows = results.map(r => [LABEL[r.score], r.claim.who || r.claim.page || "", r.claim.quote, verdictWhy(r), r.reasons.map(x=>x[0]).join("; "), r.reasons.map(x=>x[1]).join(" | "), r.claim.rewrite].map(esc).join(","));
   const csv = "﻿" + head.join(",") + "\n" + rows.join("\n");
   try { await downloads.save({ filename: "green-claims-results.csv", data: csv }); }
   catch (e) { if (e && e.code === "unavailable") $("csv").hidden = true; }
@@ -574,10 +617,15 @@ $("csv").onclick = async () => {
 $("src").value = current.text;
 renderSamples(); showSaved();
 
-if (window.claude && window.claude.use){
-  window.claude.use("sample").then(s => { sample = s; if (!s) setStatus("Live checking isn't available in this view. Saved results still work."); });
-  window.claude.use("downloads").then(d => { downloads = d; renderResults(); });
+function demoMode(){
+  $("envtag").textContent = "Demo mode";
+  setStatus("Demo mode: live review is off in this view, but every sample document opens with its saved review.");
 }
+if (window.claude && window.claude.use){
+  window.claude.use("sample").then(s => { sample = s; if (!s) demoMode(); });
+  window.claude.use("downloads").then(d => { downloads = d; renderResults(); });
+} else { demoMode(); }
 })();
 </script>
-</body></html>
+</body>
+</html>

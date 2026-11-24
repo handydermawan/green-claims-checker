@@ -3,8 +3,12 @@ Green-Claims Checker — command-line version
 ===========================================
 
 Finds environmental ("green") claims in a PDF or text file, asks Claude
-yes/no questions about each claim, then scores every claim 0 / 1 / 2 with
-FIXED RULES (the same rules as the web prototype). Writes a CSV.
+yes/no questions about each claim, then gives every claim a verdict with
+FIXED RULES (the same rules as the web prototype):
+
+    Not approved  ·  Moderately approved  ·  Approved
+
+Writes a CSV and a readable HTML report you can open in any browser.
 
 Quick start
 -----------
@@ -20,11 +24,16 @@ Quick start
     # See which sentences would be sent, without calling Claude (free)
     python green_claims_checker.py report.pdf --dry-run
 
+    # Several reports at once (one CSV + one HTML report per file)
+    python green_claims_checker.py reports/*.pdf --out-dir results
+
 Things you will most likely want to edit are marked  # EDIT ME.
 Prototype only — not legal advice.
 """
 
 import argparse
+import datetime
+import html
 import csv
 import json
 import os
@@ -61,7 +70,7 @@ RULES = {
 
 FLAGS = ["generic_term", "absolute_claim", "quantified", "comparative", "baseline_stated", "scope_stated",
          "evidence_cited", "offset_based", "future_target", "plan_stated"]
-LABEL = {0: "High risk", 1: "Needs work", 2: "Supported"}
+LABEL = {0: "Not approved", 1: "Moderately approved", 2: "Approved"}
 
 
 # ---------------------------------------------------------------- data
@@ -212,6 +221,18 @@ def assess(c: Claim) -> None:
     c.reasons = red + amber
 
 
+def verdict_why(c: Claim) -> str:
+    """One plain sentence explaining the verdict (same wording as the web app)."""
+    if c.score == 0:
+        reds = [r[0].lower() for r in c.reasons if r[1] in (RULES["offset"], RULES["generic"], RULES["absolute"])
+                or r[0].startswith("Future target")]
+        return "Not approved because: " + "; ".join(reds) + "."
+    if c.score == 2:
+        extra = (", with a baseline" if c.flags["comparative"] else "") + (" and a plan" if c.flags["future_target"] else "")
+        return "Approved: it gives a number, says what it covers and names its evidence" + extra + "."
+    return "Moderately approved: not misleading on its face, but " + "; ".join(r[0].lower() for r in c.reasons) + "."
+
+
 # ---------------------------------------------------------------- run
 def run(sents: list[Sentence], client, model: str) -> list[Claim]:
     claims, seen = [], set()
@@ -242,18 +263,81 @@ def run(sents: list[Sentence], client, model: str) -> list[Claim]:
 def write_csv(claims: list[Claim], path: str) -> None:
     with open(path, "w", newline="", encoding="utf-8-sig") as fh:
         w = csv.writer(fh)
-        w.writerow(["score", "label", "page", "topic", "quote", "reasons", "rules", "rewrite"] + FLAGS)
+        w.writerow(["verdict", "page", "topic", "quote", "why", "reasons", "rules", "rewrite"] + FLAGS)
         for c in sorted(claims, key=lambda c: (c.score, c.page or 0)):
-            w.writerow([c.score, LABEL[c.score], c.page or "", c.topic, c.quote,
+            w.writerow([LABEL[c.score], c.page or "", c.topic, c.quote, verdict_why(c),
                         "; ".join(r[0] for r in c.reasons), " | ".join(r[1] for r in c.reasons), c.rewrite]
                        + [c.flags[k] for k in FLAGS])
 
 
+COLOURS = {0: "#B3261E", 1: "#B26A00", 2: "#2E7D32"}
+
+
+def write_html(claims: list[Claim], path: str, source: str) -> None:
+    """A one-file report that opens in any browser and prints cleanly."""
+    e = html.escape
+    counts = {s: sum(c.score == s for c in claims) for s in (0, 1, 2)}
+    cards = []
+    for c in sorted(claims, key=lambda c: (c.score, c.page or 0)):
+        reasons = "".join(f"<li>{e(r[0])}<small>{e(r[1])}</small></li>" for r in c.reasons)
+        cards.append(
+            f'<article style="border-left:5px solid {COLOURS[c.score]}">'
+            f'<p class="tag" style="color:{COLOURS[c.score]}">{e(LABEL[c.score])}'
+            f'{" · page " + str(c.page) if c.page else ""}</p>'
+            f"<blockquote>{e(c.quote)}</blockquote><p class=why>{e(verdict_why(c))}</p>"
+            f"{'<ul>' + reasons + '</ul>' if reasons else ''}"
+            f"{'<p class=rw><b>Suggested rewrite:</b> ' + e(c.rewrite) + '</p>' if c.rewrite else ''}</article>")
+    doc = f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Green-Claims report</title>
+<style>body{{font:16px/1.5 system-ui,sans-serif;max-width:860px;margin:32px auto;padding:0 16px;color:#1C2A22}}
+h1{{font-size:28px;margin:0}}.meta{{color:#5b6b61}}.counts{{display:flex;gap:12px;flex-wrap:wrap;margin:20px 0}}
+.counts div{{border:1px solid #d5ddd6;border-radius:8px;padding:10px 14px;min-width:140px}}.counts b{{font-size:26px;display:block}}
+article{{border:1px solid #d5ddd6;border-radius:8px;padding:12px 16px;margin:12px 0;break-inside:avoid}}
+.tag{{font-weight:700;text-transform:uppercase;font-size:13px;margin:0}}blockquote{{margin:8px 0;font-size:17px}}
+.why{{font-weight:600;margin:4px 0}}li small{{display:block;color:#5b6b61}}.rw{{background:#E8F1EA;padding:8px 10px;border-radius:6px}}
+footer{{color:#5b6b61;font-size:13px;margin-top:24px}}</style></head><body>
+<h1>Green-Claims Checker report</h1><p class=meta>{e(source)} · {datetime.date.today():%d %B %Y}</p>
+<div class=counts><div><b>{len(claims)}</b>claims found</div>
+<div style="color:{COLOURS[0]}"><b>{counts[0]}</b>Not approved</div>
+<div style="color:{COLOURS[1]}"><b>{counts[1]}</b>Moderately approved</div>
+<div style="color:{COLOURS[2]}"><b>{counts[2]}</b>Approved</div></div>
+{''.join(cards) or '<p>No green claims found.</p>'}
+<footer>Prototype, not legal advice. Claude can miss or misread claims: check every result against the source.
+Powered by Claude Opus 5.5.</footer></body></html>"""
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(doc)
+
+
+def check_file(path: str, first, last, client, model: str, out_csv: str, out_html: str, dry_run: bool) -> None:
+    print(f"\n== {path}", file=sys.stderr)
+    if path.lower().endswith(".pdf"):
+        text = read_pdf(path, first, last)
+    else:
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+    sents = candidates(text)
+    print(f"{len(sents)} sentences to check.", file=sys.stderr)
+    if len(sents) > MAX_SENTENCES:
+        print(f"Only the first {MAX_SENTENCES} will be checked (raise MAX_SENTENCES to change).", file=sys.stderr)
+        sents = sents[:MAX_SENTENCES]
+    if dry_run:
+        for s in sents:
+            print(f"[p.{s.page}] {s.text}" if s.page else s.text)
+        return
+    claims = run(sents, client, model)
+    write_csv(claims, out_csv)
+    write_html(claims, out_html, os.path.basename(path))
+    counts = {s: sum(c.score == s for c in claims) for s in (0, 1, 2)}
+    print(f"{len(claims)} claims: {counts[0]} not approved, {counts[1]} moderately approved, {counts[2]} approved.")
+    print(f"Saved {out_csv} and {out_html}")
+
+
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Find and score green claims in a PDF or text file.")
-    ap.add_argument("file", help="PDF or .txt file")
-    ap.add_argument("--pages", help="page range for PDFs, e.g. 336-400")
-    ap.add_argument("--out", default="green_claims_results.csv", help="CSV file to write")
+    ap = argparse.ArgumentParser(description="Find green claims in PDF or text files and give each a verdict.")
+    ap.add_argument("files", nargs="+", help="one or more PDF or .txt files")
+    ap.add_argument("--pages", help="page range for PDFs, e.g. 336-400 (applies to every file)")
+    ap.add_argument("--out", default="green_claims_results.csv", help="CSV file to write (single file only)")
+    ap.add_argument("--out-dir", help="folder for results when checking several files")
     ap.add_argument("--model", default=MODEL, help="Claude model id")
     ap.add_argument("--dry-run", action="store_true", help="list the sentences that would be sent, then stop")
     args = ap.parse_args()
@@ -263,33 +347,29 @@ def main() -> None:
         a, _, b = args.pages.partition("-")
         first, last = int(a), int(b or a)
 
-    if args.file.lower().endswith(".pdf"):
-        text = read_pdf(args.file, first, last)
-    else:
-        with open(args.file, encoding="utf-8") as fh:
-            text = fh.read()
+    for f in args.files:
+        if not os.path.isfile(f):
+            sys.exit(f"File not found: {f}")
 
-    sents = candidates(text)
-    print(f"{len(sents)} sentences to check.", file=sys.stderr)
-    if len(sents) > MAX_SENTENCES:
-        print(f"Only the first {MAX_SENTENCES} will be checked (raise MAX_SENTENCES to change).", file=sys.stderr)
-        sents = sents[:MAX_SENTENCES]
+    client = None
+    if not args.dry_run:
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            sys.exit("Set ANTHROPIC_API_KEY first (see the top of this file).")
+        import anthropic
+        client = anthropic.Anthropic()
 
-    if args.dry_run:
-        for s in sents:
-            print(f"[p.{s.page}] {s.text}" if s.page else s.text)
-        return
-
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        sys.exit("Set ANTHROPIC_API_KEY first (see the top of this file).")
-    import anthropic
-    client = anthropic.Anthropic()
-
-    claims = run(sents, client, args.model)
-    write_csv(claims, args.out)
-    counts = {s: sum(c.score == s for c in claims) for s in (0, 1, 2)}
-    print(f"\n{len(claims)} claims: {counts[0]} high risk, {counts[1]} need work, {counts[2]} supported.")
-    print(f"Saved to {args.out}")
+    several = len(args.files) > 1 or args.out_dir
+    if args.out_dir:
+        os.makedirs(args.out_dir, exist_ok=True)
+    for f in args.files:
+        if several:
+            stem = os.path.splitext(os.path.basename(f))[0]
+            base = os.path.join(args.out_dir or ".", stem + "_claims")
+            out_csv, out_html = base + ".csv", base + ".html"
+        else:
+            out_csv = args.out
+            out_html = os.path.splitext(args.out)[0] + ".html"
+        check_file(f, first, last, client, args.model, out_csv, out_html, args.dry_run)
 
 
 if __name__ == "__main__":

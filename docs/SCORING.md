@@ -1,6 +1,6 @@
 # Rating rules
 
-The language model only answers yes/no questions about each claim. The rating is computed in code (`assess()` in `app/index.html` and `python/green_claims_checker.py`), so it is deterministic and auditable.
+The language model only answers yes/no questions about each claim. The verdict is computed in code (`assess()` in `app/index.html` and `python/green_claims_checker.py`), so it is deterministic and auditable.
 
 ## The questions
 
@@ -19,7 +19,7 @@ The language model only answers yes/no questions about each claim. The rating is
 
 ## Rules
 
-**0 · High risk** if any of these apply:
+**Not approved** if any of these apply:
 
 | Flag | Condition | Source |
 |---|---|---|
@@ -28,9 +28,9 @@ The language model only answers yes/no questions about each claim. The rating is
 | Absolute claim, no evidence | `absolute_claim` and not `evidence_cited` | CMA Green Claims Code (must not omit or hide important information) |
 | Target, no plan or evidence | `future_target` and not `plan_stated` and not `evidence_cited` | EU Directive 2024/825, Article 6(2)(d) |
 
-**2 · Supported** if there is no high-risk flag and all of these hold: `quantified`, `scope_stated`, `evidence_cited`, a baseline for any comparison, and a plan for any target.
+**Approved** if there is no red flag and all of these hold: `quantified`, `scope_stated`, `evidence_cited`, a baseline for any comparison, and a plan for any target.
 
-**1 · Needs work** otherwise. The reasons list whichever is missing: number, scope, baseline or evidence (CMA Green Claims Code).
+**Moderately approved** otherwise. The reasons list whichever is missing: number, scope, baseline or evidence (CMA Green Claims Code).
 
 ## Sources
 

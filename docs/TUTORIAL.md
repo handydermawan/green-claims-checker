@@ -16,21 +16,27 @@ Press **Run review**. The first time, allow the page to use Claude. Results arri
 
 ## 3. Read the results
 
-- **Summary:** total claims and the count for each rating. Filter with All / High risk / Needs work / Supported.
-- **Claim card:** rating, page, the claim word for word, ✓/✗ checks, red flags, reasons with the rule behind each, and a suggested rewrite. Facts the company must add are in `[brackets]`.
+- **Summary:** total claims and the count for each verdict. Filter with All / Not approved / Moderately approved / Approved.
+- **Claim card:** verdict, page, the claim word for word, a one-line reason for the verdict, ✓/✗ checks, red flags, reasons with the rule behind each, and a suggested rewrite. Facts the company must add are in `[brackets]`.
 - **Regulator cases:** each card also shows what the regulator found.
 
 ![Regulator case](screenshots/regulator-case.png)
 
-## 4. How ratings are decided
+## 4. Share the results
 
-Open **How ratings are decided** in the Source document panel, or see [SCORING.md](SCORING.md).
+**Copy report** copies a plain-text summary you can paste into an email or document. **Export results (CSV)** saves a spreadsheet file.
+
+If the top-right tag says **Demo mode**, live review is off in that view (for example outside claude.ai), but every sample still opens with its saved review.
+
+## 5. How verdicts are decided
+
+Open **How verdicts are decided** in the Source document panel, or see [SCORING.md](SCORING.md).
 
 ![Rating rules](screenshots/rating-rules.png)
 
 ## 5. Export
 
-Press **Export results (CSV)** for a spreadsheet of ratings, quotes, reasons, rules and rewrites.
+Press **Export results (CSV)** for a spreadsheet of verdicts, quotes, reasons, rules and rewrites.
 
 ## Troubleshooting
 
