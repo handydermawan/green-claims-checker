@@ -25,7 +25,7 @@ Checking claims with a lawyer costs £295–£579 an hour, so most small brands 
 2. **Answer.** For each claim it answers ten yes/no questions: does it give a number, state its scope, name evidence, rely on offsets, make a future promise, and so on.
 3. **Decide.** **Fixed rules in code** turn those answers into a verdict, so the model never decides the verdict itself. The same answers always give the same verdict, so every result can be audited.
 
-| Rating | Rule |
+| Verdict | Rule |
 |---|---|
 | **Not approved** | Relies on carbon offsets, *or* uses a broad or absolute term ("sustainable", "recyclable", "net zero") with no evidence named, *or* is a future target with no plan or evidence |
 | **Approved** | No red flag, and it gives a number, says what it covers, names evidence, and states a baseline for any comparison and a plan for any target |
@@ -50,7 +50,7 @@ docs/screenshots/              Images used in the docs
 CHANGELOG.md                   Every version, what changed and why
 ```
 
-Every version is saved as a git tag (`v0.1.0` to `v0.5.0`). To open an older version: `git checkout v0.1.0`, then `git checkout main` to come back.
+Every version and what changed is listed in CHANGELOG.md (latest: v0.6.0).
 
 ## Quick start
 
